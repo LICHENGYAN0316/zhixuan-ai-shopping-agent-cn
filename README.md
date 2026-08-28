@@ -8,6 +8,10 @@
 
 **[打开在线演示](https://zhixuan-agent-cn.plupluto.chatgpt.site)** · [阅读项目文档](#作品集文档) · [查看复现方法](#5-分钟复现)
 
+**[查看完整 Figma 设计与交互原型](https://www.figma.com/design/0cQqKzVoOS9376uWrMgwGV)** · [阅读设计交付说明](design/figma/README.md)
+
+[![智选 Agent Figma 作品集封面](design/figma/previews/cover.png)](https://www.figma.com/design/0cQqKzVoOS9376uWrMgwGV)
+
 一个面向中文电商场景的可运行 AI 产品作品集：Agent 将自然语言购买需求转成结构化意图，从合成商品知识库召回候选，使用实际训练的推荐排序模型输出 Top-K，并基于可追溯商品证据生成购买建议与取舍提醒。
 
 > 数据声明：本仓库中的商品、用户、评论、查询与行为全部为合成数据，不代表任何真实平台、品牌、商品或商业效果。
@@ -98,6 +102,7 @@ CSV、字段解释、固定随机种子和文件哈希见 `data/generated/` 与 
 - [系统架构与 RAG 流程](docs/系统架构与RAG流程.md)
 - [实验与指标设计](docs/实验与指标设计.md)
 - [数据字典](docs/数据字典.md)
+- [Figma 设计系统、响应式界面与交互原型](design/figma/README.md)
 
 ## 当前边界与下一步
 

@@ -43,3 +43,7 @@ next-env.d.ts
 
 # 仅供本人准备投递和面试，不发布到 GitHub / Sites
 /本地求职辅助资料/
+
+# Figma 原文件只保存在本地，不进入公开仓库
+/.private/
+*.fig
