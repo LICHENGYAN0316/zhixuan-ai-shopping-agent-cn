@@ -7,13 +7,13 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 
 export const metadata: Metadata = {
   title: '智选 Agent｜3C 数码电商智能导购',
-  description: '基于合成电商数据、RAG 与推荐排序的中文智能导购作品集。',
+  description: '把预算、用途与取舍变成有依据的中文 3C 推荐决策；公开版使用合成数据。',
   openGraph: {
     title: '智选 Agent｜3C 数码电商智能导购',
-    description: '可运行、可复现的中文 AI 产品作品集：合成数据、RAG、推荐排序与离线实验。',
+    description: '从需求澄清、候选检索到可解释对比的中文 AI 产品作品集；公开版使用合成数据。',
     locale: 'zh_CN',
     type: 'website',
-    images: [{ url: '/social-card.png', width: 1536, height: 1024, alt: '智选 Agent 项目封面' }],
+    images: [{ url: '/social-card.png', width: 1440, height: 900, alt: '智选 Agent：把复杂参数变成适合你的选择' }],
   },
 };
 

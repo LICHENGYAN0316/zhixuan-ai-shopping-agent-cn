@@ -105,6 +105,10 @@ const keywordRules: Array<[SpecKey, string[]]> = [
   ['quality', ['耐用', '品质', '做工', '稳定']],
 ];
 
+function rejectsGaming(query: string): boolean {
+  return /(?:不要|不需要|不考虑|无需|别推荐|排除|拒绝|非).{0,5}(?:游戏|电竞)|不(?:玩|打).{0,3}游戏/.test(query);
+}
+
 function inferCategory(query: string): string {
   if (/耳机|降噪|听歌/.test(query)) return '头戴耳机';
   if (/显示器|外接屏|电竞屏/.test(query)) return '显示器';
@@ -116,7 +120,7 @@ function inferCategory(query: string): string {
 
 function inferUseCase(query: string): string {
   if (/编程|开发|代码/.test(query)) return '编程开发';
-  if (/游戏|电竞/.test(query)) return '轻度游戏';
+  if (!rejectsGaming(query) && /游戏|电竞/.test(query)) return '轻度游戏';
   if (/剪辑|设计|创作|绘图/.test(query)) return '内容创作';
   if (/出差|通勤|旅行|便携/.test(query)) return '差旅通勤';
   if (/影音|追剧|电影|听歌/.test(query)) return '影音娱乐';
@@ -124,12 +128,21 @@ function inferUseCase(query: string): string {
 }
 
 function inferBudget(query: string): number | null {
-  const kMatch = query.match(/(\d+(?:\.\d+)?)\s*[kK千]/);
-  if (kMatch) return Math.round(Number(kMatch[1]) * 1000);
-  const matches = [...query.matchAll(/(?:预算|不超过|以内|大约|左右)?\s*(\d{3,5})\s*元?/g)]
-    .map((match) => Number(match[1]))
-    .filter((value) => value >= 100 && value <= 50000);
-  return matches.length ? Math.max(...matches) : null;
+  const candidates: Array<{ index: number; value: number }> = [];
+  const patterns = [
+    /(?:预算|上限|不超过|控制在|低于|少于|大约|约|改成|调整为|降到|提高到)\s*[:：]?\s*(\d{3,5})(?:\s*元)?/g,
+    /(\d{3,5})\s*元(?:内|以内|以下|左右|上下)?/g,
+    /(?:预算|上限|不超过|控制在|低于|少于|大约|约|改成|调整为|降到|提高到)\s*[:：]?\s*(\d+(?:\.\d+)?)\s*[kK千](?:\s*元)?/g,
+  ];
+  patterns.forEach((pattern, patternIndex) => {
+    for (const match of query.matchAll(pattern)) {
+      const raw = Number(match[1]);
+      const value = patternIndex === 2 ? Math.round(raw * 1000) : raw;
+      if (value >= 100 && value <= 50000) candidates.push({ index: match.index ?? 0, value });
+    }
+  });
+  candidates.sort((a, b) => a.index - b.index);
+  return candidates.length ? candidates[candidates.length - 1].value : null;
 }
 
 export function understandIntent(query: string): Intent {
@@ -139,7 +152,11 @@ export function understandIntent(query: string): Intent {
   Object.entries(useCaseWeights[useCase]).forEach(([key, value]) => {
     raw[key as SpecKey] += value ?? 0;
   });
-  const matched = keywordRules.filter(([, words]) => words.some((word) => query.includes(word)));
+  const gamingRejected = rejectsGaming(query);
+  const matched = keywordRules.filter(([key, words]) => {
+    if (key === 'gaming' && gamingRejected) return false;
+    return words.some((word) => query.includes(word));
+  });
   matched.forEach(([key]) => { raw[key] += 1.15; });
   const primaryPreference = matched[0]?.[0] ?? useCaseFeature[useCase];
   raw[primaryPreference] += 0.5;
@@ -206,7 +223,7 @@ export function runAgent(query: string, products: Product[], ranker: Ranker): Ag
       const retrievalScore = budgetFit(product.price, intent.budget!) * 0.7 + keywordMatches * 0.1 + product.rating / 25;
       return { product, retrievalScore };
     })
-    .filter(({ product }) => product.price <= intent.budget! * 1.18)
+    .filter(({ product }) => product.price <= intent.budget!)
     .sort((a, b) => b.retrievalScore - a.retrievalScore)
     .slice(0, 24);
   const results = retrieved
