@@ -76,6 +76,11 @@ test('Doubao web search is required and maps action sources from a bilingual cat
           type: 'search',
           sources: [{ type: 'url', url: 'https://www.aveneusa.com/thermal-spring-water-300ml' }],
         },
+      }, {
+        type: 'message',
+        provider_payload: {
+          records: [{ uri: 'https://www.eau-thermale-avene.com/product/thermal-spring-water' }],
+        },
       }],
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
@@ -89,8 +94,8 @@ test('Doubao web search is required and maps action sources from a bilingual cat
       productType: '喷雾',
     }], intent, new AbortController().signal);
     assert.equal(result.provider, 'doubao-web-search');
-    assert.equal(result.evidence.length, 1);
-    assert.equal(result.evidence[0].sourceAuthority, 'official');
+    assert.equal(result.evidence.length, 2);
+    assert.ok(result.evidence.every((item) => item.sourceAuthority === 'official'));
   } finally {
     globalThis.fetch = originalFetch;
     if (originalSearchKey === undefined) delete process.env.WEB_SEARCH_API_KEY;
