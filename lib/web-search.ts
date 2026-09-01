@@ -92,13 +92,18 @@ function safeUrl(value: unknown): string | null {
 
 function buildSearchQuery(candidates: SearchCandidate[], intent: Intent): string {
   const products = candidates.map((item) => `${cleanText(item.brand, 40)} ${cleanText(item.name, 52)}`).join('；');
+  const verifiedSources = candidates.flatMap((item) => (item.officialUrls ?? []).slice(0, 2).flatMap((rawUrl) => {
+    const url = safeUrl(rawUrl);
+    return url ? [`${cleanText(item.name, 52)} 已核实官方参考 ${url}`] : [];
+  })).join('；');
   const constraints = [
     ...intent.desiredEffects,
     intent.skinType !== '未知' ? intent.skinType : '',
     intent.sensitiveSkin ? '敏感肌' : '',
     ...intent.avoidIngredients.map((item) => `不含 ${item}`),
   ].filter(Boolean).join(' ');
-  return `${products} ${constraints} 品牌官网 产品信息 成分 功效`.slice(0, 480);
+  const sourceHint = verifiedSources ? `优先重新核对这些商品页是否仍对应候选：${verifiedSources}` : '';
+  return `${products} ${constraints} ${sourceHint} 品牌官网 产品信息 成分 功效`.slice(0, 960);
 }
 
 async function searchInfinity(

@@ -145,6 +145,7 @@ Function Schema 对本地规范品类、产品类型、排除产品类型、肤�
 - 校验同源请求标记，并按来源地址执行每 5 分钟最多 12 次的进程内限流；
 - Content-Length 最大 4,000 字节，需求仍限制 1–500 字；
 - 只接受 `product-identities.json` 中存在且不重复的 1–3 个 ID，商品名称、品牌、品类、类型和已核实官方 URL 均由服务端重建；
+- 核实商品的官方 URL 作为重新核对种子交给搜索上游；历史商品没有该字段，仍执行开放网页搜索；
 - 优先使用仅存在服务端的 `WEB_SEARCH_API_KEY` 调用固定 Search Infinity 地址；没有专用 Key 时，使用 `ARK_API_KEY` 与 Responses `web_search`；
 - Search Infinity 每次只发一个合并查询，最多取 10 条结果；Responses 最多允许 2 次搜索工具调用；
 - 相同候选和约束的成功结果在当前服务实例内缓存 15 分钟；

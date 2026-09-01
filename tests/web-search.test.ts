@@ -122,16 +122,22 @@ test('an exact verified official URL disambiguates multilingual same-brand candi
   const originalArkKey = process.env.ARK_API_KEY;
   delete process.env.WEB_SEARCH_API_KEY;
   process.env.ARK_API_KEY = 'test-only';
-  globalThis.fetch = async () => new Response(JSON.stringify({
-    output: [{
-      type: 'web_search_call',
-      status: 'completed',
-      action: {
-        type: 'search',
-        sources: [{ type: 'url', url: 'https://www.aveneusa.com/thermal-spring-water-300ml' }],
-      },
-    }],
-  }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  globalThis.fetch = async (_input, init) => {
+    const body = JSON.parse(String(init?.body)) as { input?: Array<{ role?: string; content?: string }> };
+    assert.ok(body.input?.some((item) => item.role === 'user' && item.content?.includes(
+      'https://aveneusa.com/thermal-spring-water-300ml/',
+    )));
+    return new Response(JSON.stringify({
+      output: [{
+        type: 'web_search_call',
+        status: 'completed',
+        action: {
+          type: 'search',
+          sources: [{ type: 'url', url: 'https://www.aveneusa.com/thermal-spring-water-300ml' }],
+        },
+      }],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
   try {
     const intent = understandIntent('雅漾舒护活泉水喷雾 300ml，敏感肌，舒缓，避开香精');
     const result = await searchWebEvidence([{
