@@ -93,7 +93,7 @@ CSV
 - 当前配置对应 Agent Plan 专属 Key，不与普通 `/api/v3` 的通用 API Key 混用；
 - 请求设置 `thinking: { "type": "disabled" }`，让结构化需求抽取保持较低延迟；
 - `store: false`；
-- 强制函数名：`extract_personal_care_intent`，返回字段由服务端执行完整类型、枚举、长度和范围校验；
+- 强制函数名：`extract_personal_care_intent`；服务端先把模型偶发返回的可空字符串哨兵（如 `"null"`）规范为 JSON `null`，再执行完整类型、枚举、长度和范围校验；
 - 429、502、503、504 最多重试一次，退避 220–399 ms；
 - 整体 AbortController 超时为 6 秒。
 
