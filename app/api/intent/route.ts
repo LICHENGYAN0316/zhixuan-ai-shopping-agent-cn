@@ -5,6 +5,12 @@ import {
   normalizeIntent,
   understandIntent,
 } from '../../../lib/agent';
+import {
+  INTENT_CLARIFICATION_FIELDS,
+  INTENT_CONCERNS,
+  INTENT_SKIN_TYPES,
+  sanitizeIntentArguments,
+} from '../../../lib/intent-contract';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,12 +30,12 @@ const intentParameters = {
     excludedProductTypes: { type: 'array', maxItems: 8, items: { type: 'string', enum: [...CANONICAL_PRODUCT_TYPES] } },
     budgetMin: { anyOf: [{ type: 'number' }, { type: 'null' }] },
     budgetMax: { anyOf: [{ type: 'number' }, { type: 'null' }] },
-    skinType: { type: 'string', enum: ['干性', '油性', '混合性', '中性', '未知'] },
+    skinType: { type: 'string', enum: [...INTENT_SKIN_TYPES] },
     sensitiveSkin: { anyOf: [{ type: 'boolean' }, { type: 'null' }] },
     concerns: {
       type: 'array',
       maxItems: 10,
-      items: { type: 'string', enum: ['保湿', '控油', '舒缓', '清洁', '祛痘', '抗老', '提亮', '修护', '防晒', '去屑', '定妆', '卸妆', '其他'] },
+      items: { type: 'string', enum: [...INTENT_CONCERNS] },
     },
     desiredEffects: { type: 'array', maxItems: 10, items: { type: 'string' } },
     avoidIngredients: { type: 'array', maxItems: 12, items: { type: 'string' } },
@@ -41,7 +47,7 @@ const intentParameters = {
     needsClarification: { type: 'boolean' },
     clarificationField: {
       anyOf: [
-        { type: 'string', enum: ['category', 'budget', 'skin_type', 'concern'] },
+        { type: 'string', enum: [...INTENT_CLARIFICATION_FIELDS] },
         { type: 'null' },
       ],
     },
@@ -54,62 +60,6 @@ const intentParameters = {
     'needsClarification', 'clarificationField', 'confidence',
   ],
 } as const;
-
-const categoryValues = new Set(intentParameters.properties.category.enum);
-const productTypeValues = new Set(intentParameters.properties.productTypes.items.enum);
-const skinTypeValues = new Set(intentParameters.properties.skinType.enum);
-const concernValues = new Set(intentParameters.properties.concerns.items.enum);
-const clarificationValues = new Set(['category', 'budget', 'skin_type', 'concern']);
-const intentFields = new Set(intentParameters.required);
-
-function isNullableNumber(value: unknown) {
-  return value === null || (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 50_000);
-}
-
-function isNullableBoolean(value: unknown) {
-  return value === null || typeof value === 'boolean';
-}
-
-function isStringArray(value: unknown, maximum: number, allowed?: Set<string>) {
-  return Array.isArray(value)
-    && value.length <= maximum
-    && value.every((item) => typeof item === 'string' && item.length > 0 && item.length <= 80 && (!allowed || allowed.has(item)));
-}
-
-function canonicalizeNullableFields(value: unknown): unknown {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
-  const record = { ...(value as Record<string, unknown>) };
-  const nullableFields = ['budgetMin', 'budgetMax', 'sensitiveSkin', 'avoidFragrance', 'clarificationField'];
-  nullableFields.forEach((field) => {
-    const current = record[field];
-    if (typeof current === 'string' && ['null', 'none', 'nil'].includes(current.trim().toLowerCase())) record[field] = null;
-  });
-  return record;
-}
-
-function isIntentArguments(value: unknown): value is Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-  const record = value as Record<string, unknown>;
-  if (!intentParameters.required.every((key) => Object.hasOwn(record, key))) return false;
-  if (!Object.keys(record).every((key) => intentFields.has(key as typeof intentParameters.required[number]))) return false;
-  if (typeof record.category !== 'string' || !categoryValues.has(record.category as typeof intentParameters.properties.category.enum[number])) return false;
-  if (!isStringArray(record.productTypes, 8, productTypeValues as Set<string>)) return false;
-  if (!isStringArray(record.excludedProductTypes, 8, productTypeValues as Set<string>)) return false;
-  if (!isNullableNumber(record.budgetMin) || !isNullableNumber(record.budgetMax)) return false;
-  if (record.budgetMin !== null && record.budgetMax !== null && Number(record.budgetMin) > Number(record.budgetMax)) return false;
-  if (typeof record.skinType !== 'string' || !skinTypeValues.has(record.skinType as typeof intentParameters.properties.skinType.enum[number])) return false;
-  if (!isNullableBoolean(record.sensitiveSkin)) return false;
-  if (!isStringArray(record.concerns, 10, concernValues as Set<string>)) return false;
-  if (!isStringArray(record.desiredEffects, 10)) return false;
-  if (!isStringArray(record.avoidIngredients, 12) || !isStringArray(record.preferredIngredients, 12)) return false;
-  if (!isNullableBoolean(record.avoidFragrance)) return false;
-  if (!isStringArray(record.preferredBrands, 8) || !isStringArray(record.excludedBrands, 8)) return false;
-  if (!isStringArray(record.keywords, 16)) return false;
-  if (typeof record.needsClarification !== 'boolean') return false;
-  if (record.clarificationField !== null && (typeof record.clarificationField !== 'string' || !clarificationValues.has(record.clarificationField))) return false;
-  if (record.needsClarification && record.clarificationField === null) return false;
-  return typeof record.confidence === 'number' && Number.isFinite(record.confidence) && record.confidence >= 0 && record.confidence <= 1;
-}
 
 function fallback(query: string, reason: string) {
   return NextResponse.json(
@@ -205,12 +155,14 @@ export async function POST(request: Request) {
     if (!call?.arguments) return fallback(query, 'missing_function_call');
     let parsed: unknown;
     try {
-      parsed = canonicalizeNullableFields(typeof call.arguments === 'string' ? JSON.parse(call.arguments) : call.arguments);
+      parsed = sanitizeIntentArguments(typeof call.arguments === 'string' ? JSON.parse(call.arguments) : call.arguments);
     } catch {
       return fallback(query, 'invalid_function_arguments');
     }
-    if (!isIntentArguments(parsed)) return fallback(query, 'invalid_function_arguments');
-    const intent = normalizeIntent({ ...parsed, provider: 'doubao' }, query);
+    if (!parsed) return fallback(query, 'invalid_function_arguments');
+    // Accept valid fields independently: one malformed optional field must not
+    // discard a successful model call or the deterministic local safeguards.
+    const intent = normalizeIntent({ ...parsed, provider: 'doubao' } as Parameters<typeof normalizeIntent>[0], query);
     return NextResponse.json(
       { intent, provider: 'doubao' },
       { headers: { 'Cache-Control': 'no-store' } },
