@@ -971,16 +971,6 @@ function reasonsFor(product: Product, intent: Intent): string[] {
   return unique(reasons, 4);
 }
 
-export function webEvidenceCandidates(intentValue: Intent, products: Product[], limit = 3): Product[] {
-  const intent = normalizeIntent(intentValue);
-  return products
-    .filter((product) => coreEligible(product, intent))
-    .map((product) => ({ product, score: retrievalScore(product, intent) }))
-    .sort((a, b) => b.score - a.score || a.product.price - b.product.price)
-    .slice(0, Math.max(1, Math.min(limit, 5)))
-    .map((item) => item.product);
-}
-
 export function shouldUseWebDiscovery(intentValue: Intent): boolean {
   const intent = normalizeIntent(intentValue);
   return Boolean(
@@ -992,6 +982,11 @@ export function shouldUseWebDiscovery(intentValue: Intent): boolean {
     || intent.preferredBrands.length
     || intent.productTypes.includes('其他'),
   );
+}
+
+export function finalWebDiscoveryCandidates(response: AgentResponse, limit = 3): Product[] {
+  if (response.kind !== 'recommendation') return [];
+  return response.results.slice(0, Math.max(0, Math.min(limit, 3))).map((item) => item.product);
 }
 
 export function applyWebEvidence(products: Product[], evidence: WebEvidence[], intentValue: Intent): Product[] {

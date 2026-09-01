@@ -27,11 +27,11 @@ import type { CSSProperties, FormEvent, KeyboardEvent, ReactNode } from 'react';
 import {
   SPEC_LABELS,
   applyWebEvidence,
+  finalWebDiscoveryCandidates,
   runAgent,
   runAgentFromIntent,
   shouldUseWebDiscovery,
   understandIntent,
-  webEvidenceCandidates,
 } from '../lib/agent';
 import type { AgentResponse, Intent, Product, Recommendation, WebEvidence } from '../lib/agent';
 
@@ -332,7 +332,7 @@ export default function Home() {
     }
     if (next.kind === 'recommendation' && shouldUseWebDiscovery(resolvedIntent)) {
       try {
-        const candidates = webEvidenceCandidates(resolvedIntent, products, 3);
+        const candidates = finalWebDiscoveryCandidates(next);
         if (candidates.length) {
           const searchResponse = await fetch('/api/search', {
             method: 'POST',

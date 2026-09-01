@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  finalWebDiscoveryCandidates,
   normalizeIntent,
   runAgentFromIntent,
   shouldUseWebDiscovery,
@@ -245,4 +246,9 @@ test('web discovery is reserved for evidence-bearing or unknown-type needs', () 
   assert.equal(shouldUseWebDiscovery(understandIntent('预算 300，洗面奶，想要控油')), true);
   assert.equal(shouldUseWebDiscovery(understandIntent('预算 300，敏感肌洗面奶')), true);
   assert.equal(shouldUseWebDiscovery(normalizeIntent({ productTypes: ['其他'], keywords: ['眼霜'] }, '预算 300，眼霜')), true);
+
+  const response = runAgentFromIntent(understandIntent('预算 300，洗面奶，想要控油'), products);
+  const discoveryIds = finalWebDiscoveryCandidates(response).map((product) => product.product_id);
+  const visibleIds = response.kind === 'recommendation' ? response.results.map((item) => item.product.product_id) : [];
+  assert.deepEqual(discoveryIds, visibleIds.slice(0, 3));
 });
