@@ -113,6 +113,44 @@ test('Doubao web search is required and maps action sources from a bilingual cat
   }
 });
 
+test('a diacritic brand label can match its ASCII official domain with a product identity token', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalSearchKey = process.env.WEB_SEARCH_API_KEY;
+  const originalArkKey = process.env.ARK_API_KEY;
+  delete process.env.WEB_SEARCH_API_KEY;
+  process.env.ARK_API_KEY = 'test-only';
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    output: [{
+      type: 'web_search_call',
+      status: 'completed',
+      action: {
+        type: 'search',
+        sources: [{ type: 'url', url: 'https://www.aveneusa.com/thermal-spring-water-300ml' }],
+      },
+    }],
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  try {
+    const intent = understandIntent('雅漾舒护活泉水喷雾 300ml，敏感肌，舒缓，避开香精');
+    const result = await searchWebEvidence([{
+      productId: 'P1',
+      name: '雅漾舒护活泉水喷雾 300ml',
+      brand: 'Avène 雅漾',
+      category: '面部护理',
+      productType: '喷雾',
+    }], intent, new AbortController().signal);
+    assert.equal(result.provider, 'doubao-web-search');
+    assert.equal(result.evidence.length, 1);
+    assert.equal(result.evidence[0].productId, 'P1');
+    assert.equal(result.evidence[0].sourceAuthority, 'official');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalSearchKey === undefined) delete process.env.WEB_SEARCH_API_KEY;
+    else process.env.WEB_SEARCH_API_KEY = originalSearchKey;
+    if (originalArkKey === undefined) delete process.env.ARK_API_KEY;
+    else process.env.ARK_API_KEY = originalArkKey;
+  }
+});
+
 test('Doubao sources that identify only a shared brand do not attach to the wrong product', async () => {
   const originalFetch = globalThis.fetch;
   const originalSearchKey = process.env.WEB_SEARCH_API_KEY;

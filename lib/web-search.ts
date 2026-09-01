@@ -243,9 +243,10 @@ async function searchArk(
 
 function candidateScore(candidate: SearchCandidate, hit: SearchHit): number {
   const haystack = `${hit.title} ${hit.siteName} ${hit.summary} ${hit.url}`.toLowerCase();
+  const normalizedHaystack = normalizeMatchText(haystack);
   const aliases = brandAliases(candidate.brand);
-  let score = aliases.some((alias) => haystack.includes(alias.toLowerCase())) ? 4 : 0;
-  if (haystack.includes(candidate.productType.toLowerCase())) score += 2;
+  let score = aliases.some((alias) => normalizedHaystack.includes(normalizeMatchText(alias))) ? 4 : 0;
+  if (normalizedHaystack.includes(normalizeMatchText(candidate.productType))) score += 2;
   const nameWithoutBrand = aliases.reduce(
     (name, alias) => name.replace(new RegExp(escapeRegExp(alias), 'gi'), ' '),
     candidate.name,
@@ -255,8 +256,12 @@ function candidateScore(candidate: SearchCandidate, hit: SearchHit): number {
     .map((item) => item.trim().toLowerCase())
     .filter((item) => item.length >= 2)
     .slice(0, 8);
-  score += tokens.filter((token) => haystack.includes(token)).length;
+  score += tokens.filter((token) => normalizedHaystack.includes(normalizeMatchText(token))).length;
   return score;
+}
+
+function normalizeMatchText(value: string): string {
+  return value.toLowerCase().normalize('NFKD').replace(/\p{M}+/gu, '');
 }
 
 function normalizeBrandLabel(value: string): string {
