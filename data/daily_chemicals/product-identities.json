@@ -900,7 +900,10 @@
     "name": "SK-II 护肤精华露（神仙水）",
     "brand": "SK-II",
     "category": "面部护理",
-    "product_type": "精华水"
+    "product_type": "精华水",
+    "official_urls": [
+      "https://www.sk-ii.com/products/facial-treatment-essence"
+    ]
   },
   {
     "product_id": "A15461030340",
@@ -921,7 +924,10 @@
     "name": "悦诗风吟控油矿物质散粉 5g",
     "brand": "innisfree 悦诗风吟",
     "category": "底妆",
-    "product_type": "散粉"
+    "product_type": "散粉",
+    "official_urls": [
+      "https://us.innisfree.com/products/no-sebum-matte-mineral-setting-powder"
+    ]
   },
   {
     "product_id": "A15487125632",
@@ -1922,7 +1928,10 @@
     "name": "倩碧卓越润肤啫喱（无油）50ml",
     "brand": "Clinique 倩碧",
     "category": "面部护理",
-    "product_type": "乳液"
+    "product_type": "乳液",
+    "official_urls": [
+      "https://www.clinique.com/product/1687/5047/skincare/moisturizers/dramatically-differenttm-moisturizing-gel"
+    ]
   },
   {
     "product_id": "A18284042707",
@@ -4666,7 +4675,10 @@
     "name": "倩碧卓越润肤乳 50ml",
     "brand": "Clinique 倩碧",
     "category": "面部护理",
-    "product_type": "乳液"
+    "product_type": "乳液",
+    "official_urls": [
+      "https://www.clinique.com/product/1687/26651/skincare/moisturizers/dramatically-different-moisturizing-lotiontm"
+    ]
   },
   {
     "product_id": "A35463586510",
@@ -10812,7 +10824,10 @@
     "name": "雅漾舒护活泉水喷雾 300ml",
     "brand": "Avène 雅漾",
     "category": "面部护理",
-    "product_type": "喷雾"
+    "product_type": "喷雾",
+    "official_urls": [
+      "https://www.aveneusa.com/thermal-spring-water-300ml"
+    ]
   },
   {
     "product_id": "A520712697378",

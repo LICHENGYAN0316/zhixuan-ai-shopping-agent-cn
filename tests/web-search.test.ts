@@ -13,6 +13,9 @@ test('search candidates are reconstructed from the server-side catalog whitelist
   const resolved = resolveSearchCandidates([product.product_id]);
   assert.equal(resolved?.[0]?.name, product.name);
   assert.equal(resolved?.[0]?.brand, product.brand);
+  assert.deepEqual(resolveSearchCandidates(['A520711852230'])?.[0]?.officialUrls, [
+    'https://www.aveneusa.com/thermal-spring-water-300ml',
+  ]);
   assert.equal(resolveSearchCandidates(['not-in-catalog']), null);
   assert.equal(resolveSearchCandidates([product.product_id, product.product_id]), null);
   assert.equal(resolveSearchCandidates([{ productId: product.product_id }]), null);
@@ -113,7 +116,7 @@ test('Doubao web search is required and maps action sources from a bilingual cat
   }
 });
 
-test('a diacritic brand label can match its ASCII official domain with a product identity token', async () => {
+test('an exact verified official URL disambiguates multilingual same-brand candidates', async () => {
   const originalFetch = globalThis.fetch;
   const originalSearchKey = process.env.WEB_SEARCH_API_KEY;
   const originalArkKey = process.env.ARK_API_KEY;
@@ -137,11 +140,114 @@ test('a diacritic brand label can match its ASCII official domain with a product
       brand: 'Avène 雅漾',
       category: '面部护理',
       productType: '喷雾',
+      officialUrls: ['https://aveneusa.com/thermal-spring-water-300ml/'],
+    }, {
+      productId: 'P2',
+      name: '雅漾修红洁面乳 300ml',
+      brand: 'Avène 雅漾',
+      category: '面部护理',
+      productType: '洁面',
     }], intent, new AbortController().signal);
     assert.equal(result.provider, 'doubao-web-search');
     assert.equal(result.evidence.length, 1);
     assert.equal(result.evidence[0].productId, 'P1');
     assert.equal(result.evidence[0].sourceAuthority, 'official');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalSearchKey === undefined) delete process.env.WEB_SEARCH_API_KEY;
+    else process.env.WEB_SEARCH_API_KEY = originalSearchKey;
+    if (originalArkKey === undefined) delete process.env.ARK_API_KEY;
+    else process.env.ARK_API_KEY = originalArkKey;
+  }
+});
+
+test('brand, generic type and weak size tokens cannot identify a product', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalSearchKey = process.env.WEB_SEARCH_API_KEY;
+  const originalArkKey = process.env.ARK_API_KEY;
+  delete process.env.WEB_SEARCH_API_KEY;
+  process.env.ARK_API_KEY = 'test-only';
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    output: [{
+      type: 'web_search_call',
+      status: 'completed',
+      action: {
+        type: 'search',
+        sources: [
+          { type: 'url', url: 'https://www.aveneusa.com/unrelated-spray-300ml' },
+          { type: 'url', url: 'https://www.aveneusa.com/' },
+        ],
+      },
+    }],
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  try {
+    const intent = understandIntent('雅漾舒护活泉水喷雾 300ml，敏感肌，舒缓，避开香精');
+    const result = await searchWebEvidence([{
+      productId: 'P1',
+      name: '雅漾舒护活泉水喷雾 300ml',
+      brand: 'Avène 雅漾',
+      category: '面部护理',
+      productType: '喷雾',
+      officialUrls: ['https://www.aveneusa.com/thermal-spring-water-300ml'],
+    }], intent, new AbortController().signal);
+    assert.equal(result.provider, 'doubao-web-search');
+    assert.deepEqual(result.evidence, []);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalSearchKey === undefined) delete process.env.WEB_SEARCH_API_KEY;
+    else process.env.WEB_SEARCH_API_KEY = originalSearchKey;
+    if (originalArkKey === undefined) delete process.env.ARK_API_KEY;
+    else process.env.ARK_API_KEY = originalArkKey;
+  }
+});
+
+test('compound quantities, pack sizes and generic claims stay weak identity signals', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalSearchKey = process.env.WEB_SEARCH_API_KEY;
+  const originalArkKey = process.env.ARK_API_KEY;
+  delete process.env.WEB_SEARCH_API_KEY;
+  process.env.ARK_API_KEY = 'test-only';
+  const cases = [
+    { name: '雅漾专属面膜 24ml*4', productType: '面膜', token: '24ml*4' },
+    { name: '雅漾活泉喷雾 300ml*2', productType: '喷雾', token: '300ml*2' },
+    { name: '雅漾活泉喷雾 300ml×2瓶', productType: '喷雾', token: '300ml×2瓶' },
+    { name: '雅漾修护面膜 10片装', productType: '面膜', token: '10片装' },
+    { name: '雅漾喷雾 300ml', productType: '喷雾', token: '喷雾 300ml' },
+    { name: '雅漾 喷雾 保湿 300ml', productType: '喷雾', token: '保湿' },
+    { name: '雅漾 喷雾 舒缓 300ml', productType: '喷雾', token: '舒缓' },
+    { name: '雅漾 喷雾 敏感肌 300ml', productType: '喷雾', token: '敏感肌' },
+    { name: '雅漾 防晒 SPF50', productType: '防晒', token: 'SPF50' },
+  ];
+  let callIndex = 0;
+  globalThis.fetch = async () => {
+    const current = cases[callIndex++];
+    return new Response(JSON.stringify({
+      output: [{
+        type: 'web_search_call',
+        status: 'completed',
+        action: {
+          type: 'search',
+          sources: [{
+            type: 'url',
+            title: `Avène 雅漾 ${current.token} 官方页面`,
+            url: `https://www.aveneusa.com/unrelated-${callIndex}`,
+          }],
+        },
+      }],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const intent = understandIntent('雅漾日化用品，敏感肌，舒缓');
+    for (const item of cases) {
+      const result = await searchWebEvidence([{
+        productId: 'P1',
+        name: item.name,
+        brand: 'Avène 雅漾',
+        category: '面部护理',
+        productType: item.productType,
+      }], intent, new AbortController().signal);
+      assert.deepEqual(result.evidence, []);
+    }
   } finally {
     globalThis.fetch = originalFetch;
     if (originalSearchKey === undefined) delete process.env.WEB_SEARCH_API_KEY;
@@ -203,7 +309,7 @@ test('third-party pages stay public evidence and cannot become official by wordi
   globalThis.fetch = async () => new Response(JSON.stringify({
     Result: {
       WebResults: [{
-        Title: '雅漾喷雾官方推荐',
+        Title: '雅漾舒护活泉水喷雾 官方推荐',
         SiteName: '第三方博客',
         Url: 'https://example.com/review',
         Summary: '文章称适合敏感肌且不含香精。',

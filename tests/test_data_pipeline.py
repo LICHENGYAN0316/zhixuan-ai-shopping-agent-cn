@@ -80,12 +80,18 @@ class PublishedDataContractTest(unittest.TestCase):
     def setUpClass(cls):
         cls.products = json.loads((ROOT / "public" / "data" / "daily-products.json").read_text(encoding="utf-8"))
         cls.metrics = json.loads((ROOT / "public" / "data" / "metrics.json").read_text(encoding="utf-8"))
+        cls.search_identities = json.loads((ROOT / "data" / "daily_chemicals" / "product-identities.json").read_text(encoding="utf-8"))
 
     def test_public_catalog_has_expected_scope(self):
         self.assertEqual(len(self.products), 3497)
         self.assertEqual(len({item["product_id"] for item in self.products}), len(self.products))
         self.assertEqual(self.metrics["dataset"]["products"], len(self.products))
         self.assertEqual(sum(item["evidence_level"] == "official_current_reference" for item in self.products), 5)
+        self.assertEqual(len(self.search_identities), len(self.products))
+        self.assertEqual(sum(bool(item.get("official_urls")) for item in self.search_identities), 5)
+        self.assertTrue(all("price" not in item and "sales_count" not in item for item in self.search_identities))
+        official_urls = [url for item in self.search_identities for url in item.get("official_urls", [])]
+        self.assertEqual(len(official_urls), len(set(official_urls)))
 
     def test_public_catalog_does_not_expose_dates_or_personal_records(self):
         forbidden_fields = {"update_time", "snapshot_time", "snapshot_date", "客户编码", "订单编码"}

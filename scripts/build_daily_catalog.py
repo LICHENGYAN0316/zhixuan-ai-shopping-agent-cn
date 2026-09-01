@@ -412,16 +412,23 @@ def build(
     if missing_verified_ids:
         raise ValueError(f"verified ids not found in marketplace source: {missing_verified_ids}")
     products = make_public_products(latest, verified_by_id)
-    search_identities = [
-        {
+    search_identities = []
+    for product in products:
+        identity = {
             "product_id": product["product_id"],
             "name": product["name"],
             "brand": product["brand"],
             "category": product["category"],
             "product_type": product["product_type"],
         }
-        for product in products
-    ]
+        official_urls = [
+            source["url"]
+            for source in product["evidence_sources"]
+            if source.get("source_kind") == "brand_official_product_page" and source.get("url")
+        ]
+        if official_urls:
+            identity["official_urls"] = official_urls
+        search_identities.append(identity)
     category_summary, workbook_quality = clean_daily_workbook(daily_xlsx)
 
     verified_count = sum(product["evidence_level"] == "official_current_reference" for product in products)

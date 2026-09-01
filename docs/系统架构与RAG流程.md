@@ -79,7 +79,7 @@ CSV
 - `public/data/manifest.json`：Schema、来源层、公开文件名和布尔边界；
 - `data/daily_chemicals/catalog_quality.json`：实际清洗计数与资格计数；
 - `data/daily_chemicals/category_sales_summary.json`：去标识商品编码聚合。
-- `data/daily_chemicals/product-identities.json`：服务端联网候选身份白名单，只含 ID、名称、品牌、品类和产品类型。
+- `data/daily_chemicals/product-identities.json`：服务端联网候选身份白名单，只含 ID、名称、品牌、品类、产品类型，以及核实商品的精确官方来源 URL；不含价格和销量。
 
 当前 manifest 不生成文件哈希、字节数或生成时间。
 
@@ -144,13 +144,13 @@ Function Schema 对本地规范品类、产品类型、排除产品类型、肤�
 
 - 校验同源请求标记，并按来源地址执行每 5 分钟最多 12 次的进程内限流；
 - Content-Length 最大 4,000 字节，需求仍限制 1–500 字；
-- 只接受 `product-identities.json` 中存在且不重复的 1–3 个 ID，商品名称、品牌、品类和类型均由服务端重建；
+- 只接受 `product-identities.json` 中存在且不重复的 1–3 个 ID，商品名称、品牌、品类、类型和已核实官方 URL 均由服务端重建；
 - 优先使用仅存在服务端的 `WEB_SEARCH_API_KEY` 调用固定 Search Infinity 地址；没有专用 Key 时，使用 `ARK_API_KEY` 与 Responses `web_search`；
 - Search Infinity 每次只发一个合并查询，最多取 10 条结果；Responses 最多允许 2 次搜索工具调用；
 - 相同候选和约束的成功结果在当前服务实例内缓存 15 分钟；
 - 8 秒超时，失败返回空证据与原因，前端保留本地推荐；
 - 过滤非 HTTP(S)、本机与私网 URL，限制标题和摘要长度；
-- 按品牌、产品类型与商品名词项映射回本地候选；
+- 优先按已核实官方 URL 精确映射；其他来源必须含可唯一识别商品的强名称信号，仅品牌、品类或规格词不足以绑定；
 - 只有品牌域名白名单命中时标为 `official`，第三方网页即使标题写“官方”也只能标为 `public`；二者都只作发现线索。
 
 联网请求不包含样本价，因此不会提供或覆盖当前售价、促销、库存或购买链接。
@@ -246,7 +246,7 @@ Function Schema 对本地规范品类、产品类型、排除产品类型、肤�
 - 公开商品不暴露日期、客户/订单字段或活动词，且价格标签为“样本价”；
 - 六个指数有限且在 0–1，敏感肌资格记录具有官方参考和来源。
 
-`tests/agent.test.ts`、`tests/intent-route.test.ts` 与 `tests/web-search.test.ts` 另覆盖产品别名、实体级否定/改口、宽类目与跨品类映射、目录缺失分支、中文数字及预算方向、成分/品牌正负关系、具体核实功效、paraben 成分族、肤质排序、豆包逐字段安全清洗、强制联网及多版本工具来源兼容解析、联网触发门槛、服务端候选白名单、官网域名分级、第三方降级及摘要不升级硬资格，共 19 个自动用例。
+`tests/agent.test.ts`、`tests/intent-route.test.ts` 与 `tests/web-search.test.ts` 另覆盖产品别名、实体级否定/改口、宽类目与跨品类映射、目录缺失分支、中文数字及预算方向、成分/品牌正负关系、具体核实功效、paraben 成分族、肤质排序、豆包逐字段安全清洗、强制联网及多版本工具来源兼容解析、联网触发门槛、服务端候选白名单、精确官方 URL、强名称信号、弱规格/通用属性拒绝、官网域名分级、第三方降级及摘要不升级硬资格，共 23 个自动用例。
 
 当前没有使用真实 Key 的豆包与搜索上游自动联调、浏览器 UI 回归测试、manifest 哈希测试或 `medical_red_flag` 等医疗风险测试。
 

@@ -7,6 +7,7 @@ type ProductIdentity = {
   brand: string;
   category: string;
   product_type: string;
+  official_urls?: string[];
 };
 
 const candidateById = new Map(
@@ -16,6 +17,7 @@ const candidateById = new Map(
     brand: product.brand,
     category: product.category,
     productType: product.product_type,
+    officialUrls: product.official_urls,
   } satisfies SearchCandidate]),
 );
 

@@ -6,6 +6,7 @@ export type SearchCandidate = {
   brand: string;
   category: string;
   productType: string;
+  officialUrls?: string[];
 };
 
 type SearchHit = {
@@ -61,6 +62,15 @@ const SKIN_TERMS: Record<string, string[]> = {
   '中性': ['中性', 'normal skin'],
   '敏感肌': ['敏感肌', '敏感性皮肤', '敏感皮肤', 'sensitive skin'],
 };
+
+const GENERIC_IDENTITY_ATTRIBUTES = Array.from(new Set([
+  ...Object.keys(EFFECT_TERMS),
+  ...Object.values(EFFECT_TERMS).flat(),
+  ...Object.keys(SKIN_TERMS),
+  ...Object.values(SKIN_TERMS).flat(),
+  '敏感肌肤', '适合敏感肌', '温和', '清爽', '滋润', '专用', '无香', '无添加', '天然', '植物', '有机',
+  'moisturizing', 'moisturizer', 'moisture', 'hydrating', 'sensitive', 'fragrance free',
+])).map(compactMatchText).filter(Boolean).sort((a, b) => b.length - a.length);
 
 function cleanText(value: unknown, maximum = 700): string {
   return typeof value === 'string'
@@ -241,27 +251,84 @@ async function searchArk(
   return [...deduplicated.values()];
 }
 
-function candidateScore(candidate: SearchCandidate, hit: SearchHit): number {
+function candidateMatch(candidate: SearchCandidate, hit: SearchHit): { score: number; strongSignals: number } {
   const haystack = `${hit.title} ${hit.siteName} ${hit.summary} ${hit.url}`.toLowerCase();
   const normalizedHaystack = normalizeMatchText(haystack);
+  const compactHaystack = compactMatchText(haystack);
   const aliases = brandAliases(candidate.brand);
   let score = aliases.some((alias) => normalizedHaystack.includes(normalizeMatchText(alias))) ? 4 : 0;
-  if (normalizedHaystack.includes(normalizeMatchText(candidate.productType))) score += 2;
+  if (normalizedHaystack.includes(normalizeMatchText(candidate.productType))) score += 1;
   const nameWithoutBrand = aliases.reduce(
     (name, alias) => name.replace(new RegExp(escapeRegExp(alias), 'gi'), ' '),
     candidate.name,
   );
+  const compactName = compactMatchText(nameWithoutBrand);
   const tokens = nameWithoutBrand
     .split(/[\s/（）()【】\[\]·,，:：+_-]+/)
     .map((item) => item.trim().toLowerCase())
     .filter((item) => item.length >= 2)
     .slice(0, 8);
-  score += tokens.filter((token) => normalizedHaystack.includes(normalizeMatchText(token))).length;
-  return score;
+  const strongTokens = tokens.filter((token) => !isWeakIdentityToken(token, candidate.productType));
+  let strongSignals = 0;
+  if (strongTokens.length > 0 && compactName.length >= 4 && compactHaystack.includes(compactName)) {
+    score += 6;
+    strongSignals += 2;
+  }
+  if (strongSignals === 0) {
+    strongTokens.forEach((token) => {
+      if (!normalizedHaystack.includes(normalizeMatchText(token))) return;
+      score += 3;
+      strongSignals += 1;
+    });
+  }
+  return { score, strongSignals };
 }
 
 function normalizeMatchText(value: string): string {
-  return value.toLowerCase().normalize('NFKD').replace(/\p{M}+/gu, '');
+  let normalized = '';
+  for (const character of value.toLowerCase().normalize('NFC')) {
+    normalized += /\p{Script=Latin}/u.test(character)
+      ? character.normalize('NFKD').replace(/\p{M}+/gu, '')
+      : character;
+  }
+  return normalized;
+}
+
+function compactMatchText(value: string): string {
+  return normalizeMatchText(value).replace(/[^\p{L}\p{N}]+/gu, '');
+}
+
+function isWeakIdentityToken(token: string, productType: string): boolean {
+  const compact = compactMatchText(token);
+  if (!compact || compact === compactMatchText(productType)) return true;
+  const specificationRemainder = normalizeMatchText(token)
+    .replace(/\s+/g, '')
+    .replace(/\d+(?:\.\d+)?(?:ml|kg|g|l|毫升|千克|克|片|支|瓶|袋|盒|套|只)/gi, '')
+    .replace(/(?:[x×*]\d+(?:片|支|瓶|袋|盒|套|只)?|\d+(?:装|量贩装)?)/gi, '')
+    .replace(/(?:量贩装|组合装|家庭装|旅行装|装)/g, '')
+    .replace(/(?:正品|官方|旗舰|专柜|新款|包邮)/g, '')
+    .replace(/[x×*+/_-]+/g, '');
+  const remainder = compactMatchText(specificationRemainder);
+  if (!remainder) return true;
+  let identityRemainder = remainder.split(compactMatchText(productType)).join('');
+  GENERIC_IDENTITY_ATTRIBUTES.forEach((term) => {
+    identityRemainder = identityRemainder.split(term).join('');
+  });
+  if (!identityRemainder || /^spf\d*(?:pa\d*)?$/i.test(identityRemainder)) return true;
+  return ['正品', '官方', '旗舰', '专柜', '新款', '包邮'].includes(identityRemainder);
+}
+
+function canonicalSourceUrl(value: string): string | null {
+  const safe = safeUrl(value);
+  if (!safe) return null;
+  const url = new URL(safe);
+  const hostname = url.hostname.toLowerCase().replace(/^www\./, '');
+  const pathname = url.pathname.replace(/\/+$/, '') || '/';
+  ['gclid', 'fbclid', 'ref', 'source'].forEach((key) => url.searchParams.delete(key));
+  [...url.searchParams.keys()].filter((key) => key.toLowerCase().startsWith('utm_')).forEach((key) => url.searchParams.delete(key));
+  url.searchParams.sort();
+  const query = url.searchParams.toString();
+  return `${url.protocol}//${hostname}${url.port ? `:${url.port}` : ''}${pathname}${query ? `?${query}` : ''}`;
 }
 
 function normalizeBrandLabel(value: string): string {
@@ -310,11 +377,22 @@ function formulatedWithout(text: string, avoided: string[]): string[] {
 function toEvidence(hits: SearchHit[], candidates: SearchCandidate[], intent: Intent): WebEvidence[] {
   const retrievedAt = new Date().toISOString().slice(0, 10);
   return hits.flatMap((hit) => {
+    const hitIdentity = canonicalSourceUrl(hit.url);
+    const exactOfficialCandidates = hitIdentity ? candidates.filter((candidate) => (
+      candidate.officialUrls ?? []
+    ).some((url) => canonicalSourceUrl(url) === hitIdentity)) : [];
+    if (exactOfficialCandidates.length > 1) return [];
     const ranked = candidates
-      .map((candidate) => ({ candidate, score: candidateScore(candidate, hit) }))
+      .map((candidate) => ({ candidate, ...candidateMatch(candidate, hit) }))
       .sort((a, b) => b.score - a.score);
-    if (!ranked[0] || ranked[0].score < 5 || ranked[1]?.score === ranked[0].score) return [];
-    const candidate = ranked[0].candidate;
+    const exactCandidate = exactOfficialCandidates.length === 1 ? exactOfficialCandidates[0] : null;
+    if (!exactCandidate && (
+      !ranked[0]
+      || ranked[0].strongSignals < 1
+      || ranked[0].score < 5
+      || ranked[1]?.score === ranked[0].score
+    )) return [];
+    const candidate = exactCandidate ?? ranked[0].candidate;
     const text = `${hit.title} ${hit.summary}`;
     const requestedSkin = [intent.skinType, ...(intent.sensitiveSkin ? ['敏感肌'] : [])].filter((item) => item !== '未知');
     return [{
@@ -324,7 +402,7 @@ function toEvidence(hits: SearchHit[], candidates: SearchCandidate[], intent: In
       siteName: hit.siteName,
       summary: hit.summary,
       retrievedAt,
-      sourceAuthority: isOfficial(candidate, hit.url) && ranked[0].score >= 5 ? 'official' as const : 'public' as const,
+      sourceAuthority: isOfficial(candidate, hit.url) ? 'official' as const : 'public' as const,
       matchedEffects: matchTerms(text, EFFECT_TERMS, intent.desiredEffects),
       matchedSkinTypes: matchTerms(text, SKIN_TERMS, requestedSkin),
       formulatedWithout: formulatedWithout(text, intent.avoidIngredients),
