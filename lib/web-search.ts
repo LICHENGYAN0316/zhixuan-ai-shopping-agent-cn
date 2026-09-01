@@ -201,7 +201,10 @@ async function searchArk(
     if (depth > 7 || visitedNodes >= 600 || value === null || value === undefined) return;
     visitedNodes += 1;
     if (typeof value === 'string') {
-      for (const match of value.matchAll(/https?:\/\/[^\s<>"'）)\]}]+/gi)) addHit(match[0], '');
+      for (const line of value.split(/\r?\n/).slice(0, 80)) {
+        const matches = [...line.matchAll(/https?:\/\/[^\s<>"'）)\]}]+/gi)];
+        matches.forEach((match) => addHit(match[0], line.replace(match[0], ' ')));
+      }
       return;
     }
     if (Array.isArray(value)) {
@@ -242,7 +245,6 @@ function candidateScore(candidate: SearchCandidate, hit: SearchHit): number {
   const haystack = `${hit.title} ${hit.siteName} ${hit.summary} ${hit.url}`.toLowerCase();
   const aliases = brandAliases(candidate.brand);
   let score = aliases.some((alias) => haystack.includes(alias.toLowerCase())) ? 4 : 0;
-  if (isOfficial(candidate, hit.url)) score += 6;
   if (haystack.includes(candidate.productType.toLowerCase())) score += 2;
   const nameWithoutBrand = aliases.reduce(
     (name, alias) => name.replace(new RegExp(escapeRegExp(alias), 'gi'), ' '),
@@ -306,7 +308,7 @@ function toEvidence(hits: SearchHit[], candidates: SearchCandidate[], intent: In
     const ranked = candidates
       .map((candidate) => ({ candidate, score: candidateScore(candidate, hit) }))
       .sort((a, b) => b.score - a.score);
-    if (!ranked[0] || ranked[0].score < 3) return [];
+    if (!ranked[0] || ranked[0].score < 5 || ranked[1]?.score === ranked[0].score) return [];
     const candidate = ranked[0].candidate;
     const text = `${hit.title} ${hit.summary}`;
     const requestedSkin = [intent.skinType, ...(intent.sensitiveSkin ? ['敏感肌'] : [])].filter((item) => item !== '未知');

@@ -81,6 +81,14 @@ test('Doubao web search is required and maps action sources from a bilingual cat
         provider_payload: {
           records: [{ uri: 'https://www.eau-thermale-avene.com/product/thermal-spring-water' }],
         },
+        content: [{
+          type: 'output_text',
+          text: [
+            '雅漾舒护活泉水喷雾 300ml https://www.aveneusa.com/thermal-spring-water-300ml',
+            '雅漾舒护活泉水喷雾 300ml https://www.eau-thermale-avene.com/product/thermal-spring-water',
+          ].join('\n'),
+          annotations: [],
+        }],
       }],
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
@@ -96,6 +104,51 @@ test('Doubao web search is required and maps action sources from a bilingual cat
     assert.equal(result.provider, 'doubao-web-search');
     assert.equal(result.evidence.length, 2);
     assert.ok(result.evidence.every((item) => item.sourceAuthority === 'official'));
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalSearchKey === undefined) delete process.env.WEB_SEARCH_API_KEY;
+    else process.env.WEB_SEARCH_API_KEY = originalSearchKey;
+    if (originalArkKey === undefined) delete process.env.ARK_API_KEY;
+    else process.env.ARK_API_KEY = originalArkKey;
+  }
+});
+
+test('Doubao sources that identify only a shared brand do not attach to the wrong product', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalSearchKey = process.env.WEB_SEARCH_API_KEY;
+  const originalArkKey = process.env.ARK_API_KEY;
+  delete process.env.WEB_SEARCH_API_KEY;
+  process.env.ARK_API_KEY = 'test-only';
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    output: [{
+      type: 'web_search_call',
+      status: 'completed',
+      action: {
+        type: 'search',
+        sources: [
+          { type: 'url', url: 'https://www.clinique.com.cn/custom-repair-moisturizer-gel-jelly/11584' },
+          { type: 'url', url: 'https://www.clinique.com.cn/custom-repair-moisturizer-gel-jelly/11583' },
+        ],
+      },
+    }],
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  try {
+    const intent = understandIntent('200 元内，敏感肌，保湿，避开香精');
+    const result = await searchWebEvidence([{
+      productId: 'P1',
+      name: '倩碧卓越润肤乳 50ml',
+      brand: 'Clinique 倩碧',
+      category: '面部护理',
+      productType: '乳液',
+    }, {
+      productId: 'P2',
+      name: '倩碧卓越润肤啫喱（无油）50ml',
+      brand: 'Clinique 倩碧',
+      category: '面部护理',
+      productType: '乳液',
+    }], intent, new AbortController().signal);
+    assert.equal(result.provider, 'doubao-web-search');
+    assert.deepEqual(result.evidence, []);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalSearchKey === undefined) delete process.env.WEB_SEARCH_API_KEY;
