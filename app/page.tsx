@@ -24,13 +24,10 @@ import {
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent, KeyboardEvent, ReactNode } from 'react';
-import { SPEC_LABELS, runAgent } from '../lib/agent';
-import type { AgentResponse, Product, Ranker, Recommendation } from '../lib/agent';
+import { SPEC_LABELS, runAgent, runAgentFromIntent, understandIntent } from '../lib/agent';
+import type { AgentResponse, Intent, Product, Recommendation } from '../lib/agent';
 
 type Metrics = {
-  model: Record<string, number>;
-  popularity_baseline: Record<string, number>;
-  price_baseline: Record<string, number>;
   dataset: Record<string, number>;
 };
 
@@ -38,19 +35,19 @@ type View = 'welcome' | 'clarify' | 'processing' | 'results' | 'compare' | 'evid
 type EvidenceKey = 'product' | 'query' | 'review';
 type Tone = 'neutral' | 'success' | 'warning' | 'accent';
 
-const defaultNeed = '5000 元内，适合视频剪辑、经常出差的轻薄本';
+const defaultNeed = '200 元内，敏感肌想要舒缓保湿，避开香精';
 
 const sampleNeeds = [
-  { label: '移动剪辑轻薄本', query: defaultNeed },
-  { label: '编程与轻度游戏', query: '预算 7000 元，编程和轻度游戏，续航要好' },
-  { label: '拍照续航手机', query: '3000 元以内的手机，拍照和续航优先' },
+  { label: '敏感肌舒缓', query: defaultNeed },
+  { label: '油皮控油定妆', query: '80 元内，油皮需要控油定妆散粉，避开香精和滑石粉' },
+  { label: '干皮保湿修护', query: '200 元内，干皮需要保湿修护乳液，不要香精' },
 ];
 
 const projectDocs = [
   { title: '产品需求文档', detail: '用户问题、目标、功能范围与产品边界', file: '产品需求文档_PRD.md', icon: FileText },
-  { title: '系统架构与 RAG', detail: '需求理解、召回、排序与证据生成链路', file: '系统架构与RAG流程.md', icon: Stack },
-  { title: '实验与指标设计', detail: 'Precision、Recall、NDCG、MRR 与基线', file: '实验与指标设计.md', icon: ChartLineUp },
-  { title: '合成数据字典', detail: '数据库结构、字段语义与质量规则', file: '数据字典.md', icon: Database },
+  { title: '系统架构与 RAG', detail: '豆包需求解析、本地检索与证据约束链路', file: '系统架构与RAG流程.md', icon: Stack },
+  { title: '数据质量与指标', detail: '清洗规则、缺失值与核实属性覆盖率', file: '实验与指标设计.md', icon: ChartLineUp },
+  { title: '日化数据字典', detail: '历史商品快照、样本价与官方证据字段', file: '数据字典.md', icon: Database },
 ];
 
 const githubBase = 'https://github.com/LICHENGYAN0316/zhixuan-ai-shopping-agent-cn';
@@ -75,7 +72,7 @@ function Logo() {
     <span className="brand" aria-label="智选">
       <span className="logo-mark">Z</span>
       <strong>智选</strong>
-      <small>3C 智能导购</small>
+      <small>日化智能选品</small>
     </span>
   );
 }
@@ -168,8 +165,8 @@ function RecommendationCard({
   onEvidence: () => void;
 }) {
   const feature = intent.primaryPreference;
-  const specKeys = [feature, 'portability', 'battery', 'performance'].filter((key, position, values) => values.indexOf(key) === position).slice(0, 3) as Array<keyof typeof SPEC_LABELS>;
-  const evidenceComplete = index < 2;
+  const specKeys = [feature, 'sensitivity', 'ingredientTransparency', 'popularity'].filter((key, position, values) => values.indexOf(key) === position).slice(0, 3) as Array<keyof typeof SPEC_LABELS>;
+  const evidenceComplete = item.product.evidence_level === 'official_current_reference';
   const tradeoff = item.product.limitations.replace(/[。.]$/, '');
   return (
     <article className={'recommendation-card ' + (index === 0 ? 'is-priority ' : '') + (mobileActive ? 'is-mobile-active' : '')}>
@@ -177,8 +174,8 @@ function RecommendationCard({
         <span className={index === 0 ? 'rank-badge rank-badge-accent' : 'rank-badge'}>{index === 0 ? 'TOP 1' : '候选 ' + (index + 1)}</span>
         <span className={'evidence-badge ' + (evidenceComplete ? 'is-complete' : 'is-limited')}>{evidenceComplete ? '2 条完整依据' : '1 条依据待补'}</span>
       </div>
-      <div className="synthetic-product-visual"><SquaresFour aria-hidden="true" size={18} /><span>SYNTHETIC SKU · {item.product.product_id}</span></div>
-      <div className="card-title"><p>{item.product.name}</p><strong>¥{item.product.price.toLocaleString('zh-CN')} · 合成示例</strong></div>
+      <div className="synthetic-product-visual"><SquaresFour aria-hidden="true" size={18} /><span>HISTORICAL ITEM · {item.product.product_id}</span></div>
+      <div className="card-title"><p>{item.product.name}</p><strong>¥{item.product.price.toLocaleString('zh-CN')} · 样本价</strong></div>
       <div className="card-reasons">
         <span>为什么适合你</span>
         {item.reasons.slice(0, 2).map((reason) => <p key={reason}><Check aria-hidden="true" size={13} weight="bold" />{reason}</p>)}
@@ -199,7 +196,6 @@ export default function Home() {
   const [view, setView] = useState<View>('welcome');
   const [query, setQuery] = useState(defaultNeed);
   const [products, setProducts] = useState<Product[]>([]);
-  const [ranker, setRanker] = useState<Ranker | null>(null);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [response, setResponse] = useState<AgentResponse | null>(null);
   const [activeResult, setActiveResult] = useState(0);
@@ -210,16 +206,16 @@ export default function Home() {
   const [dataError, setDataError] = useState(false);
   const timersRef = useRef<number[]>([]);
   const loadRequestRef = useRef(0);
+  const executionRequestRef = useRef(0);
 
   const loadData = useCallback(() => {
     const requestId = ++loadRequestRef.current;
     Promise.all([
-      fetchJson<Product[]>('/data/demo-products.json'),
-      fetchJson<Ranker>('/data/ranker.json'),
+      fetchJson<Product[]>('/data/daily-products.json'),
       fetchJson<Metrics>('/data/metrics.json'),
-    ]).then(([productData, rankerData, metricData]) => {
+    ]).then(([productData, metricData]) => {
       if (requestId !== loadRequestRef.current) return;
-      setProducts(productData); setRanker(rankerData); setMetrics(metricData); setLoading(false);
+      setProducts(productData); setMetrics(metricData); setLoading(false);
     }).catch(() => {
       if (requestId !== loadRequestRef.current) return;
       setDataError(true); setLoading(false);
@@ -242,17 +238,14 @@ export default function Home() {
   }, [view]);
 
   const recommendation = response?.kind === 'recommendation' ? response : null;
-  const dataReady = !loading && !dataError && Boolean(ranker) && products.length > 0;
+  const dataReady = !loading && !dataError && products.length > 0;
   const activeRecommendation = recommendation?.results[activeResult] ?? recommendation?.results[0];
-  const modelNdcg = metrics?.model['ndcg@10'] ?? 0;
-  const baselineNdcg = metrics?.popularity_baseline['ndcg@10'] ?? 0;
-  const lift = baselineNdcg ? (modelNdcg - baselineNdcg) / baselineNdcg : 0;
 
   const previewRecommendation = useMemo(() => {
-    if (!ranker || products.length === 0) return null;
-    const preview = runAgent(defaultNeed, products, ranker);
+    if (products.length === 0) return null;
+    const preview = runAgent(defaultNeed, products);
     return preview.kind === 'recommendation' ? preview : null;
-  }, [products, ranker]);
+  }, [products]);
   const previewTop = previewRecommendation?.results[0];
 
   const intentChips = useMemo(() => {
@@ -267,9 +260,9 @@ export default function Home() {
 
   const budgetChoices = useMemo(() => {
     const category = response?.intent.category;
-    if (category === '智能手机') return [2000, 3000, 5000, 7000];
-    if (category === '头戴耳机' || category === '键鼠套装') return [500, 1000, 2000, 3000];
-    return [4000, 5000, 6000, 8000];
+    if (category === '底妆' || category === '唇部彩妆' || category === '眼部彩妆') return [50, 100, 200, 300];
+    if (category === '香氛' || category === '套装') return [200, 500, 1000, 2000];
+    return [100, 200, 300, 500];
   }, [response]);
 
   const compareItems = useMemo(() => {
@@ -284,34 +277,56 @@ export default function Home() {
   }
 
   function navigate(next: View) {
-    if (view === 'processing' && next !== 'processing') clearTimers();
+    if (view === 'processing' && next !== 'processing') { clearTimers(); executionRequestRef.current += 1; }
     if (next === 'results' && !recommendation) { setView('clarify'); return; }
     setView(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function startNew() {
-    clearTimers(); setQuery(''); setResponse(null); setProcessingStage(0); setView('clarify');
+    executionRequestRef.current += 1; clearTimers(); setQuery(''); setResponse(null); setProcessingStage(0); setView('clarify');
   }
 
-  function execute(nextQuery: string) {
-    if (!ranker || !nextQuery.trim()) return;
+  async function execute(nextQuery: string) {
+    if (!products.length || !nextQuery.trim()) return;
+    const requestId = ++executionRequestRef.current;
+    const trimmed = nextQuery.trim();
     clearTimers();
-    const next = runAgent(nextQuery.trim(), products, ranker);
-    setResponse(next); setActiveResult(0);
-    if (next.kind === 'clarification') { setView('clarify'); return; }
+    const localIntent = understandIntent(trimmed);
+    const localResponse = runAgentFromIntent(localIntent, products);
+    setResponse(localResponse); setActiveResult(0);
+    if (localResponse.kind === 'clarification') { setView('clarify'); return; }
     setCompareIds([]);
     setProcessingStage(0); setView('processing');
     [650, 1320, 2050].forEach((delay, index) => timersRef.current.push(window.setTimeout(() => setProcessingStage(index + 1), delay)));
-    timersRef.current.push(window.setTimeout(() => { setView('results'); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 2800));
+    const minimumAnimation = new Promise<void>((resolve) => window.setTimeout(resolve, 2800));
+    let next: AgentResponse = localResponse;
+    try {
+      const apiResponse = await fetch('/api/intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: trimmed }),
+      });
+      if (apiResponse.ok) {
+        const data = await apiResponse.json() as { intent?: Intent };
+        if (data.intent) next = runAgentFromIntent(data.intent, products);
+      }
+    } catch {
+      next = localResponse;
+    }
+    await minimumAnimation;
+    if (requestId !== executionRequestRef.current) return;
+    setResponse(next);
+    setView(next.kind === 'clarification' ? 'clarify' : 'results');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function submit(event?: FormEvent) { event?.preventDefault(); execute(query); }
+  function submit(event?: FormEvent) { event?.preventDefault(); void execute(query); }
   function retryData() { setLoading(true); setDataError(false); loadData(); }
   function editQuery(value: string) { setQuery(value); setResponse(null); }
   function addBudget(budget: number) {
     const next = query.replace(/[，。；;\s]+$/, '') + '，预算 ' + budget + ' 元';
-    setQuery(next); execute(next);
+    setQuery(next); void execute(next);
   }
   function handleQueryKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') submit();
@@ -323,9 +338,9 @@ export default function Home() {
 
   function comparisonData(key: string, item: Recommendation, index: number) {
     const budget = recommendation?.intent.budget ?? item.product.price;
-    const feature = recommendation?.intent.primaryPreference ?? 'performance';
+    const feature = recommendation?.intent.primaryPreference ?? 'efficacy';
     if (key === 'scene') return {
-      label: index === 0 ? recommendation?.intent.useCase + '更均衡' : index === 1 ? '另一种侧重点' : '性能侧重更明显',
+      label: index === 0 ? recommendation?.intent.useCase + '更均衡' : index === 1 ? '另一种侧重点' : '证据覆盖有取舍',
       badge: index === 0 ? '更适合' : index === 2 ? '需取舍' : '参考',
       tone: index === 0 ? 'success' : index === 2 ? 'warning' : 'neutral',
     };
@@ -338,11 +353,11 @@ export default function Home() {
       const isBest = item.product[feature] === Math.max(...values);
       return { label: SPEC_LABELS[feature] + '指数 ' + score(item.product[feature]), badge: isBest ? '更强' : '够用', tone: isBest ? 'success' : 'neutral' };
     }
-    const combined = (item.product.portability + item.product.battery) / 2;
-    const values = compareItems.map((entry) => (entry.product.portability + entry.product.battery) / 2);
+    const combined = (item.product.ingredientTransparency + item.product.sensitivity) / 2;
+    const values = compareItems.map((entry) => (entry.product.ingredientTransparency + entry.product.sensitivity) / 2);
     const isBest = combined === Math.max(...values);
     return {
-      label: '便携 ' + score(item.product.portability) + ' / 续航 ' + score(item.product.battery),
+      label: '成分透明 ' + score(item.product.ingredientTransparency) + ' / 敏感适配 ' + score(item.product.sensitivity),
       badge: isBest ? '更优' : index === 2 ? '需取舍' : '平衡',
       tone: isBest ? 'success' : index === 2 ? 'warning' : 'neutral',
     };
@@ -352,29 +367,29 @@ export default function Home() {
     if (view === 'welcome') return (
       <section className="welcome-view">
         <div className="hero-copy">
-          <span className="demo-chip"><span />公开演示版 · 合成数据</span>
+          <span className="demo-chip"><span />公开演示版 · 离线日化历史数据</span>
           <h1 data-view-title tabIndex={-1}>把复杂参数，变成<br />适合你的选择</h1>
-          <p>告诉我预算、用途和不能妥协的条件。智选会把需求整理成可确认的约束，再给出 3 个有依据、也说明取舍的候选方案。</p>
+          <p>告诉我预算、肤质、想要的功效和需要避开的成分。智选会整理约束，再给出有依据、也说明证据边界的候选方案。</p>
           <div className="hero-actions">
             <Button onClick={startNew} disabled={!dataReady} icon={<ArrowRight aria-hidden="true" size={16} />}>开始导购</Button>
-            <Button variant="secondary" onClick={() => execute(defaultNeed)} disabled={!dataReady}>查看示例方案</Button>
+            <Button variant="secondary" onClick={() => { void execute(defaultNeed); }} disabled={!dataReady}>查看示例方案</Button>
           </div>
-          <button className="sample-prompt" type="button" onClick={() => execute(defaultNeed)} disabled={!dataReady}>
+          <button className="sample-prompt" type="button" onClick={() => { void execute(defaultNeed); }} disabled={!dataReady}>
             <span>你可以这样说</span><strong>“{defaultNeed}”</strong>
           </button>
-          <div className="demo-disclosure"><Info aria-hidden="true" size={16} />展示版不调用实时商品、库存或大模型服务</div>
+          <div className="demo-disclosure"><Info aria-hidden="true" size={16} />豆包只解析当前需求；商品检索与证据约束在本地完成</div>
           {dataError && <div className="inline-error"><span>演示数据暂时未载入。</span><button type="button" onClick={retryData}>重新载入</button></div>}
         </div>
         <div className="decision-preview">
           <div className="preview-heading"><h2>正在形成你的决策依据</h2><StatusChip tone={dataReady ? 'success' : 'warning'}>{dataReady ? '需求已确认' : '界面结构预览'}</StatusChip></div>
-          <div className="preview-requirements"><span>笔记本电脑</span><span>≤ ¥5,000</span><span>内容创作</span><span>经常出差</span></div>
+          <div className="preview-requirements"><span>面部护理</span><span>≤ ¥200</span><span>敏感肌</span><span>避开香精</span></div>
           <article className="preview-card">
             <div><span className="priority-label">优先候选 01</span><strong>{previewTop ? '需求匹配分 ' + score(previewTop.score) : '等待演示数据'}</strong></div>
             <h3>{previewTop?.product.name ?? '候选方案载入中'}</h3>
             <p>{previewTop?.product.description ?? '数据就绪后，这里会展示与预算、场景和优先条件对应的候选解释。'}</p>
             <div className="preview-tradeoff"><span>需要接受</span>{previewTop?.product.limitations ?? '同时说明候选的主要取舍'}</div>
           </article>
-          <div className="preview-evidence"><span>关键结论均有可查看依据</span><small>3 类来源 · 合成示例</small></div>
+          <div className="preview-evidence"><span>关键结论均有可查看依据</span><small>3 类来源 · 核实属性</small></div>
         </div>
       </section>
     );
@@ -383,7 +398,7 @@ export default function Home() {
       <section className="workspace clarify-view">
         <div className="workspace-heading">
           <span>需求确认</span><h1 data-view-title tabIndex={-1}>先把需求说清楚，<br />再开始比较</h1>
-          <p>系统会把自然语言整理成预算、品类、使用场景和优先条件。你可以在推荐前确认和修改。</p>
+          <p>系统会把自然语言整理成预算、日化品类、肤质、功效与成分约束。你可以在推荐前确认和修改。</p>
         </div>
         <div className="composer-panel">
           <div className="composer-heading">
@@ -392,7 +407,7 @@ export default function Home() {
           </div>
           <form onSubmit={submit}>
             <label htmlFor="shopping-need">你想买什么？</label>
-            <textarea id="shopping-need" value={query} onChange={(event) => editQuery(event.target.value)} onKeyDown={handleQueryKeyDown} placeholder="例如：预算 6000 元，经常出差，希望轻薄、续航好……" autoFocus />
+            <textarea id="shopping-need" value={query} onChange={(event) => editQuery(event.target.value)} onKeyDown={handleQueryKeyDown} placeholder="例如：预算 200 元，敏感肌想保湿修护，避开香精……" autoFocus />
             <div className="sample-chips" aria-label="示例需求">
               {sampleNeeds.map((item) => <button key={item.label} type="button" onClick={() => editQuery(item.query)}>{item.label}</button>)}
             </div>
@@ -414,13 +429,13 @@ export default function Home() {
     if (view === 'processing') {
       const stages = [
         { label: '理解需求', detail: '抽取品类、预算、场景与偏好', Icon: ListChecks },
-        { label: '检索候选', detail: '按约束从合成商品库召回', Icon: MagnifyingGlass },
-        { label: '模型排序', detail: '构造特征并计算匹配得分', Icon: SlidersHorizontal },
+        { label: '检索候选', detail: '按约束从离线日化历史数据召回', Icon: MagnifyingGlass },
+        { label: '证据排序', detail: '敏感肌、成分与功效启用核实证据门槛', Icon: SlidersHorizontal },
         { label: '整理依据', detail: '生成理由、限制与证据来源', Icon: ShieldCheck },
       ];
       return (
         <section className="workspace processing-view">
-          <div className="processing-intro"><span>正在处理</span><h1 data-view-title tabIndex={-1}>把你的需求变成<br />可以比较的方案</h1><p>公开演示使用本地合成数据和实际训练的排序参数，全程不发送个人数据。</p></div>
+          <div className="processing-intro"><span>正在处理</span><h1 data-view-title tabIndex={-1}>把你的需求变成<br />可以比较的方案</h1><p>豆包仅接收当前需求文本；商品数据、本地检索和证据校验不上传。</p></div>
           <div className="pipeline-panel" aria-live="polite">
             <div className="pipeline-status"><div className="processing-spinner" /><div><span>AGENT WORKFLOW</span><h2>{stages[Math.min(processingStage, 3)].label}</h2></div><strong>{Math.min(processingStage + 1, 4)} / 4</strong></div>
             <div className="pipeline-steps">
@@ -448,7 +463,7 @@ export default function Home() {
     if (view === 'results' && recommendation) return (
       <section className="workspace results-view">
         <div className="results-header">
-          <div><span>推荐结果 · 合成演示</span><h1 data-view-title tabIndex={-1}><span className="desktop-title">为你筛出 {recommendation.results.length} 个优先候选</span><span className="mobile-title">{recommendation.results.length} 个优先候选</span></h1><p>先满足硬约束，再比较场景适配；每个候选都说明适合理由与主要取舍。</p></div>
+          <div><span>推荐结果 · 日化历史数据</span><h1 data-view-title tabIndex={-1}><span className="desktop-title">为你筛出 {recommendation.results.length} 个优先候选</span><span className="mobile-title">{recommendation.results.length} 个优先候选</span></h1><p>先满足预算和成分硬约束，再比较核实证据、历史信号与主要取舍。</p></div>
           <div><StatusChip>需求匹配完成</StatusChip><small>候选集 {recommendation.retrievedCount} · 生成 Top {recommendation.results.length}</small></div>
         </div>
         <div className="recommendation-grid">
@@ -468,18 +483,18 @@ export default function Home() {
     if (view === 'compare' && recommendation) {
       const rows = [
         { key: 'scene', label: '场景适配' }, { key: 'budget', label: '预算约束' },
-        { key: 'primary', label: SPEC_LABELS[recommendation.intent.primaryPreference] + '能力' }, { key: 'portable', label: '便携与续航' },
+        { key: 'primary', label: SPEC_LABELS[recommendation.intent.primaryPreference] + '覆盖' }, { key: 'evidence', label: '成分与敏感适配' },
       ];
       return (
         <section className="workspace compare-view">
           <div className="comparison-header">
-            <div><span>方案对比 · {compareItems.length} 个候选</span><h1 data-view-title tabIndex={-1}>不要只比参数，先看与你有关的差异</h1><p>按已确认场景排序：{recommendation.intent.useCase}优先，其次是预算、{SPEC_LABELS[recommendation.intent.primaryPreference]}与续航。</p></div>
+            <div><span>方案对比 · {compareItems.length} 个候选</span><h1 data-view-title tabIndex={-1}>不要只比参数，先看与你有关的差异</h1><p>按已确认需求排序：{recommendation.intent.useCase}优先，其次是预算、{SPEC_LABELS[recommendation.intent.primaryPreference]}与成分证据。</p></div>
             <div><Button variant="ghost" onClick={() => navigate('results')}>返回推荐</Button><StatusChip>已选 {compareItems.length} 个</StatusChip></div>
           </div>
           <div className="comparison-scroll">
             <div className="comparison-table" style={{ '--compare-count': compareItems.length } as CSSProperties}>
               <div className="comparison-axis comparison-axis-header">与你有关的维度</div>
-              {compareItems.map((item, index) => <div className={'comparison-product ' + (index === 0 ? 'is-priority' : '')} key={item.product.product_id}><div><strong>{item.product.name}</strong><span>{index === 0 ? '优先候选' : '候选 ' + (index + 1)}</span></div><p>¥{item.product.price.toLocaleString('zh-CN')} · 合成</p></div>)}
+              {compareItems.map((item, index) => <div className={'comparison-product ' + (index === 0 ? 'is-priority' : '')} key={item.product.product_id}><div><strong>{item.product.name}</strong><span>{index === 0 ? '优先候选' : '候选 ' + (index + 1)}</span></div><p>¥{item.product.price.toLocaleString('zh-CN')} · 样本价</p></div>)}
               {rows.flatMap((row) => [
                 <div className="comparison-axis" key={row.key + '-axis'}>{row.label}</div>,
                 ...compareItems.map((item, index) => {
@@ -505,17 +520,21 @@ export default function Home() {
               </article>)}
             </div>
           </div>
-          <div className="comparison-footer"><p>当前更建议 {compareItems[0]?.product.name}：它的综合排序最符合“{recommendation.intent.useCase} + {SPEC_LABELS[recommendation.intent.primaryPreference]}优先”。</p><div className="comparison-footer-actions"><Button variant="secondary" onClick={() => navigate('results')}>返回推荐</Button><Button onClick={() => openEvidence(recommendation.results.findIndex((item) => item.product.product_id === compareItems[0]?.product.product_id))} icon={<ArrowRight size={16} />}>查看完整依据</Button></div></div>
+          <div className="comparison-footer"><p>当前更建议 {compareItems[0]?.product.name}：它的综合排序最符合“{recommendation.intent.useCase} + {SPEC_LABELS[recommendation.intent.primaryPreference]}优先”的当前证据约束。</p><div className="comparison-footer-actions"><Button variant="secondary" onClick={() => navigate('results')}>返回推荐</Button><Button onClick={() => openEvidence(recommendation.results.findIndex((item) => item.product.product_id === compareItems[0]?.product.product_id))} icon={<ArrowRight size={16} />}>查看完整依据</Button></div></div>
         </section>
       );
     }
 
     if (view === 'evidence' && recommendation && activeRecommendation) {
       const item = activeRecommendation;
+      const verified = item.product.evidence_level === 'official_current_reference';
+      const ingredientSummary = item.product.ingredients.length
+        ? item.product.ingredients.slice(0, 5).join('、') + (item.product.ingredients.length > 5 ? '等' : '')
+        : '暂无经核实的成分表';
       const sources: Array<{ key: EvidenceKey; label: string; source: string; status: string; summary: string; meta: string; limited?: boolean }> = [
-        { key: 'product', label: '商品字段', source: '结构化商品参数 · ' + item.product.product_id, status: '可用', summary: '价格 ¥' + item.product.price.toLocaleString('zh-CN') + '；评分 ' + item.product.rating.toFixed(1) + '；' + SPEC_LABELS[recommendation.intent.primaryPreference] + '指数 ' + score(item.product[recommendation.intent.primaryPreference]) + '。', meta: '更新：固定合成数据 · 覆盖：价格 / 评分 / 能力字段' },
-        { key: 'query', label: '需求映射', source: '结构化需求摘要 · QUERY DEMO', status: '可用', summary: '预算 ≤ ¥' + (recommendation.intent.budget?.toLocaleString('zh-CN') ?? '待补充') + '；' + recommendation.intent.useCase + '；' + SPEC_LABELS[recommendation.intent.primaryPreference] + '优先。', meta: '更新：当前会话 · 覆盖：预算 / 场景 / 关键偏好' },
-        { key: 'review', label: '评论摘要', source: '合成评论集合 · REVIEW SET', status: '依据有限', summary: '评分来自 ' + item.product.review_count.toLocaleString('zh-CN') + ' 条合成评价；不代表真实用户口碑。', meta: '更新：固定合成数据 · 仅用于展示证据不足状态', limited: true },
+        { key: 'product', label: '历史商品字段', source: '结构化商品记录 · ' + item.product.product_id, status: '可用', summary: '样本价 ¥' + item.product.price.toLocaleString('zh-CN') + '；历史热度 ' + (item.product.sales_count?.toLocaleString('zh-CN') ?? '缺失') + '；' + SPEC_LABELS[recommendation.intent.primaryPreference] + '指数 ' + score(item.product[recommendation.intent.primaryPreference]) + '。', meta: '来源：离线日化历史商品快照 · 不含实时库存与行情' },
+        { key: 'query', label: '需求映射', source: '结构化需求摘要 · ' + (recommendation.intent.provider === 'doubao' ? 'DOUBAO' : 'LOCAL FALLBACK'), status: '可用', summary: '预算 ≤ ¥' + (recommendation.intent.budget?.toLocaleString('zh-CN') ?? '待补充') + '；' + recommendation.intent.useCase + '；' + SPEC_LABELS[recommendation.intent.primaryPreference] + '优先。', meta: '更新：当前会话 · 豆包只解析需求，本地完成商品检索' },
+        { key: 'review', label: '成分与功效证据', source: verified ? '品牌官方产品页 · CURRENT REFERENCE' : '历史标题 · UNVERIFIED', status: verified ? '当前参考已核实' : '依据有限', summary: verified ? '成分参考：' + ingredientSummary + '。功效仅按品牌官方声明呈现。' : '历史标题中的功效与成分词未经核实，不作为敏感肌或成分避雷结论。', meta: verified ? '核实：' + (item.product.formula_checked_at ?? '未标注') + ' · 当前跨市场官方参考，不反推历史配方' : '仅可用于普通检索，不进入高风险推荐', limited: !verified },
       ];
       return (
         <section className="workspace evidence-view">
@@ -523,8 +542,8 @@ export default function Home() {
           <div className="evidence-layout">
             <article className="evidence-product-card">
               <div><span className="priority-label">优先候选 {String(activeResult + 1).padStart(2, '0')}</span><strong>需求匹配分 {score(item.score)}</strong></div>
-              <div className="synthetic-product-visual"><SquaresFour size={18} /><span>SYNTHETIC SKU · {item.product.product_id}</span></div>
-              <h2>{item.product.name}</h2><h3>¥{item.product.price.toLocaleString('zh-CN')} · 合成示例</h3>
+              <div className="synthetic-product-visual"><SquaresFour size={18} /><span>HISTORICAL ITEM · {item.product.product_id}</span></div>
+              <h2>{item.product.name}</h2><h3>¥{item.product.price.toLocaleString('zh-CN')} · 样本价</h3>
               <div className="evidence-conclusion"><span>结论</span><p>{recommendation.summary}</p></div>
               <h4>为什么适合你</h4><ul>{item.reasons.map((reason) => <li key={reason}><Check size={14} weight="bold" />{reason}</li>)}</ul>
               <div className="preview-tradeoff"><span>主要取舍</span>{item.product.limitations}</div>
@@ -542,7 +561,7 @@ export default function Home() {
                   </div>;
                 })}
               </div>
-              <div className="evidence-disclosure"><Info size={17} />所有商品、价格、评论和来源均为合成演示，不代表实时市场信息。</div>
+              <div className="evidence-disclosure"><Info size={17} />商品与样本价来自离线日化历史数据；敏感肌、成分与功效仅使用已核实的当前官方参考。</div>
             </article>
           </div>
         </section>
@@ -554,25 +573,25 @@ export default function Home() {
         <div className="project-hero">
           <div>
             <span>项目说明 · 可复现 AI 产品作品集</span><h1 data-view-title tabIndex={-1}>从需求理解，到有依据的推荐决策</h1>
-            <p>智选是一个面向中文 3C 电商场景的公开演示：使用完整合成数据库、规则式意图理解、候选召回和实际训练的排序模型，展示 Agent 产品从交互到实验验证的闭环。</p>
+            <p>智选是一个面向中文日化选品的公开演示：豆包在服务端解析用户需求，本地从清洗后的历史商品快照中检索，并以官方核实属性约束敏感肌、成分避雷与功效推荐。</p>
             <div className="project-actions"><Button onClick={() => navigate('welcome')} icon={<ArrowRight size={16} />}>体验智能导购</Button><a className="ui-button ui-button-secondary" href={githubBase} target="_blank" rel="noreferrer"><span>查看 GitHub</span><GithubLogo size={17} /></a><a className="ui-button ui-button-ghost" href={figmaUrl} target="_blank" rel="noreferrer"><span>查看 Figma</span></a></div>
           </div>
-          <div className="project-boundary"><ShieldCheck size={28} /><span>公开演示边界</span><p>不使用真实用户数据，不调用实时商品服务，不把离线指标表述为线上商业效果。</p></div>
+          <div className="project-boundary"><ShieldCheck size={28} /><span>公开演示边界</span><p>不公开客户或订单明细，不调用实时商品服务，不用历史标题推断敏感肌安全性、完整成分或产品功效。</p></div>
         </div>
         <div className="project-metrics">
-          <MetricCard label="PRECISION@5" value={formatPercent(metrics?.model['precision@5'], 1)} detail="前 5 个结果中的相关商品比例" tone="accent" />
-          <MetricCard label="RECALL@10" value={formatPercent(metrics?.model['recall@10'], 1)} detail="前 10 个结果覆盖相关商品的比例" />
-          <MetricCard label="NDCG@10" value={formatPercent(metrics?.model['ndcg@10'], 1)} detail={'较热门度基线提升 ' + formatPercent(lift, 1)} tone="success" />
-          <MetricCard label="MRR" value={formatPercent(metrics?.model.mrr, 1)} detail="首个相关结果出现位置的质量" />
+          <MetricCard label="UNIQUE PRODUCTS" value={metrics?.dataset.products?.toLocaleString('zh-CN') ?? '—'} detail="去重后的历史商品记录" tone="accent" />
+          <MetricCard label="PRICE FIELD" value={formatPercent(metrics?.dataset.price_completeness, 1)} detail="样本价字段完整率" />
+          <MetricCard label="HISTORICAL SIGNAL" value={formatPercent(metrics?.dataset.historical_signal_coverage, 1)} detail="历史销量或评论信号覆盖率" tone="success" />
+          <MetricCard label="VERIFIED ATTRIBUTES" value={metrics?.dataset.verified_products?.toLocaleString('zh-CN') ?? '—'} detail="已人工核实的当前官方参考" />
         </div>
         <div className="project-section">
           <div className="section-title"><span>产品与模型流程</span><h2>每一步都能解释，也能验证</h2></div>
           <div className="flow-grid">
             {[
-              ['01', '理解需求', '抽取预算、品类、场景与偏好，信息不足时主动澄清。', ListChecks],
-              ['02', '检索商品', '从合成商品知识库按结构化约束与关键词召回候选。', MagnifyingGlass],
-              ['03', '排序候选', '使用实际训练的 Pointwise Ranker 计算匹配分数。', SlidersHorizontal],
-              ['04', '约束生成', '只基于召回证据生成理由、限制和取舍说明。', ShieldCheck],
+              ['01', '理解需求', '豆包抽取预算、品类、肤质、功效与成分约束；失败时回退本地规则。', ListChecks],
+              ['02', '检索商品', '从清洗后的离线日化历史商品快照按结构化约束召回候选。', MagnifyingGlass],
+              ['03', '证据排序', '预算、历史信号与官方核实属性共同构成可解释得分。', SlidersHorizontal],
+              ['04', '约束生成', '只基于检索证据生成理由、限制和取舍，不让模型编造商品事实。', ShieldCheck],
             ].map(([step, title, detail, Icon]) => {
               const FlowIcon = Icon as typeof ListChecks;
               return <article key={String(step)}><div><span>{step as string}</span><FlowIcon size={21} /></div><h3>{title as string}</h3><p>{detail as string}</p></article>;
@@ -580,8 +599,14 @@ export default function Home() {
           </div>
         </div>
         <div className="project-section project-data">
-          <div className="section-title"><span>合成数据库</span><h2>可训练、可复现、可审计</h2></div>
-          <div className="data-summary">{[['720', '商品'], ['2,500', '用户'], ['8,000', '查询'], ['96,000', '交互'], ['5,000', '评论']].map(([value, label]) => <div key={label}><strong>{value}</strong><span>合成{label}</span></div>)}</div>
+          <div className="section-title"><span>日化历史数据</span><h2>可复现、可审计、证据分层</h2></div>
+          <div className="data-summary">{[
+            [metrics?.dataset.products?.toLocaleString('zh-CN') ?? '—', '去重商品'],
+            [metrics?.dataset.shops?.toLocaleString('zh-CN') ?? '—', '店铺字段'],
+            [metrics?.dataset.verified_products?.toLocaleString('zh-CN') ?? '—', '核实属性'],
+            [metrics?.dataset.sensitive_skin_eligible?.toLocaleString('zh-CN') ?? '—', '敏感肌可推荐'],
+            [metrics?.dataset.ingredient_avoidance_eligible?.toLocaleString('zh-CN') ?? '—', '成分避雷可用'],
+          ].map(([value, label]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}</div>
         </div>
         <div className="project-section">
           <div className="section-title"><span>公开项目文档</span><h2>从产品定义到实验复现</h2></div>
@@ -590,7 +615,7 @@ export default function Home() {
             return <a key={doc.title} href={githubBase + '/blob/main/docs/' + encodeURIComponent(doc.file)} target="_blank" rel="noreferrer"><Icon size={22} /><div><h3>{doc.title}</h3><p>{doc.detail}</p></div><ArrowRight size={16} /></a>;
           })}</div>
         </div>
-        <div className="project-note"><Code size={19} /><p>当前公开版采用确定性中文模板生成，确保无需密钥即可运行；仓库同时提供数据生成、模型训练、测试与构建脚本。</p></div>
+        <div className="project-note"><Code size={19} /><p>豆包 Key 仅通过服务端环境变量注入；无 Key、超时或返回无效时使用确定性本地解析，商品库不会发送给大模型。</p></div>
       </section>
     );
 
@@ -601,7 +626,7 @@ export default function Home() {
     <main className={'app-shell view-' + view}>
       <Header view={view} onNavigate={navigate} />
       {main}
-      <footer className="site-footer"><div><Logo /><span>公开展示版 · 全部商品与行为均为合成数据</span></div><a href={githubBase} target="_blank" rel="noreferrer"><GithubLogo size={17} />GitHub 项目</a></footer>
+      <footer className="site-footer"><div><Logo /><span>公开展示版 · 离线日化历史数据与核实属性</span></div><a href={githubBase} target="_blank" rel="noreferrer"><GithubLogo size={17} />GitHub 项目</a></footer>
       <MobileNav view={view} onNavigate={navigate} />
     </main>
   );

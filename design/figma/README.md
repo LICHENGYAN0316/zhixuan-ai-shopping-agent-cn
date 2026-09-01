@@ -1,66 +1,75 @@
 # 智选 Agent｜Figma 产品设计交付
 
-## [打开完整 Figma 文件与交互原型 →](https://www.figma.com/design/0cQqKzVoOS9376uWrMgwGV)
+## [打开 Figma 文件与交互原型 →](https://www.figma.com/design/0cQqKzVoOS9376uWrMgwGV)
 
-[在线体验公开演示](https://zhixuan-agent-cn.plupluto.chatgpt.site) · [返回项目首页](../../README.md) · [查看设计系统说明](docs/设计系统与原型说明.md)
+[在线体验](https://zhixuan-agent-cn.plupluto.chatgpt.site) · [返回项目首页](../../README.md) · [查看设计系统说明](docs/设计系统与原型说明.md)
 
-![智选 Agent 作品集封面](previews/cover.png)
+现有设计定义了欢迎、预算澄清、四步处理、推荐结果、候选对比、推荐依据和项目说明等状态；预算澄清只在缺少预算时进入。本次日化领域更新只替换文案、商品字段和需求解析实现，不改变布局、组件样式、响应式规则或交互顺序。
 
-这套设计把 3C 数码导购从“给出一串商品”重新组织为一条可理解、可确认、可回退的决策路径：先澄清预算、用途和必须满足项，再检索与排序候选，最后把推荐理由、主要取舍和证据来源同时呈现。
+## 当前日化内容
 
-## 设计目标
+- 用户可表达预算、品类、产品类型、肤质、功效、品牌和明确避开成分。
+- 缺少预算时复用原澄清卡片；当前没有其他专门澄清页面。
+- 结果页仍返回最多三张候选卡，支持最多三项对比。
+- 商品价格字段在界面显示为“样本价”。
+- 三类依据为历史商品字段、需求映射、成分与功效证据。
+- 只有 5 个商品具有人工作成的当前品牌官方参考；其他商品显示历史标题未核实边界。
+- 敏感肌、成分避雷和功效模式会过滤掉没有相应资格的商品。
 
-- 让用户先确认需求，再接受推荐，减少系统误解带来的无效结果。
-- 将“为什么适合”和“需要接受什么取舍”放在同一层级，避免只展示优势。
-- 对商品字段、需求映射和评论摘要分别标注来源、覆盖度与缺失状态。
-- 在桌面端支持并列比较，在移动端按单手操作和阅读顺序重新排版。
-- 明确公开演示只使用合成数据，不暗示实时商品、库存、销量或购买概率。
+## 不变的设计基线
 
-## 交付范围
-
-| 模块 | 内容 |
+| 模块 | 基线 |
 |---|---|
-| Foundations | 73 个 Variables、11 个文字样式、3 个阴影样式 |
-| Components | 11 个组件集、63 个变体，覆盖按钮、输入、需求字段、推荐卡、证据与反馈状态 |
-| Desktop | 6 个 1440 × 900 页面：欢迎、澄清、处理、推荐、对比、依据 |
-| Mobile | 5 个 390 × 844 页面：欢迎、澄清、推荐、对比、依据 |
-| Prototype | 桌面与移动核心路径、Button Hover、Composer Focus、Evidence 展开/收起 |
-| Edge states | 空白、禁用、冲突、处理中、无结果、依据缺失、网络重试、清除确认等 |
-| Handoff | 响应式规则、实现边界、可访问性和公开发布验收顺序 |
+| Foundations | 暖白画布、石墨黑、铜橙、证据绿及既有字体、间距、圆角和阴影 |
+| Components | Logo、Button、Chip、Composer、Requirement Field、Progress Step、Recommendation Card、Evidence Row、Comparison Cell、Metric Card、Feedback Panel |
+| Desktop | 欢迎、澄清、处理、推荐、对比、依据与项目说明 |
+| Mobile | 单卡推荐、紧凑对比、页头返回与底部三级导航 |
+| Prototype | Button Hover、Composer Focus、Evidence 展开/收起、返回和重试 |
+| Accessibility | 可见焦点、非颜色提示、移动触控目标和减少动效 |
 
-## 核心界面
+## 当前交互
 
-### 从需求到推荐
+### 欢迎与澄清
 
-![桌面欢迎页](portfolio/desktop-welcome.png)
+- “开始导购”进入空输入；“查看示例方案”使用默认日化需求。
+- 输入框支持 Ctrl/Command + Enter。
+- 示例 Chip 只修改输入，不改变布局。
+- 预算缺失时显示一个预算问题；选择预算后自动继续。
 
-![桌面推荐结果](portfolio/desktop-results.png)
+### 处理与推荐
 
-### 从参数到决策
+- 四步为理解需求、检索候选、证据排序和整理依据。
+- 豆包不可用时服务端返回本地解析结果，不新增视觉页面。
+- 桌面最多展示三列候选，移动端一次显示一张卡片。
+- 推荐卡保持 Top 标记、证据状态、商品名称、样本价、两条理由、三个指数、取舍和两个操作。
 
-![桌面方案对比](portfolio/desktop-compare.png)
+### 对比与依据
 
-![桌面推荐依据](portfolio/desktop-evidence.png)
+- 至少选择两个候选后对比按钮可用，最多保留三个。
+- 对比页保持场景适配、预算约束、核心指数和成分透明/敏感适配四行。
+- 依据页保持三行展开结构：历史商品字段、需求映射、成分与功效证据。
+- 有官方参考时显示当前品牌页成分字符串与品牌声明；没有时显示历史标题未经核实。
 
-### 移动端重排
+## 数据状态与显示
 
-| 欢迎 | 推荐 | 对比 |
-|---|---|---|
-| ![移动欢迎](portfolio/mobile-welcome.png) | ![移动推荐](portfolio/mobile-results.png) | ![移动对比](portfolio/mobile-compare.png) |
+| 实际状态 | 显示 |
+|---|---|
+| `official_current_reference` | 当前品牌官方参考；同时显示核实日期和“不反推历史配方”边界 |
+| `historical_title_only` | 依据有限；标题功效与成分词只用于普通检索 |
+| `ingredient_list_completeness=key_only` | 仅关键成分；未知避开项不能按“不含”处理 |
+| 高级资格不满足 | 商品在进入 Top 3 前被过滤；可能进入既有无结果状态 |
+| 豆包缺 Key/超时/失败 | 本地规则降级，仍进入现有澄清或结果状态 |
 
-## 案例研究与交付说明
+## 当前项目页指标
 
-![案例研究](portfolio/case-study.png)
+四张卡片实际显示：3,497 个去重商品、100% 样本价字段完整率、91.4% 历史销量或评论信号覆盖率、5 条人工当前官方参考。下方摘要另显示 22 个店铺字段、3 个敏感肌资格和 4 个成分避雷资格。
 
-![状态与原型](portfolio/states-prototype.png)
+这些数字描述数据准备程度，不是推荐准确率、购买概率、功效概率或安全概率。
 
-![实现交付](portfolio/handoff.png)
+## 服务端与证据边界
 
-## 原型入口
-
-- [Desktop：从欢迎页开始](https://www.figma.com/design/0cQqKzVoOS9376uWrMgwGV?node-id=57-2)
-- [Mobile：从欢迎页开始](https://www.figma.com/design/0cQqKzVoOS9376uWrMgwGV?node-id=76-2)
-- [组件库](https://www.figma.com/design/0cQqKzVoOS9376uWrMgwGV?node-id=24-2)
-- [状态与原型覆盖](https://www.figma.com/design/0cQqKzVoOS9376uWrMgwGV?node-id=91-2)
-
-> 所有商品、价格、用户、查询、评论、交互和证据来源均为合成演示。“需求匹配度”只用于排序解释，不是校准后的购买概率。
+- `ARK_API_KEY`、`ARK_MODEL` 和 `ARK_BASE_URL` 只在服务端使用。
+- 豆包只接收当前需求文本与结构定义，商品库不上传。
+- 当前官方参考有 4 条同名同规格跨市场匹配和 1 条系列匹配，不能证明历史中国配方。
+- 当前没有监管备案、浓度、禁限用目录或医疗风险字段。
+- UI 保持不变不等于数据能力扩大；缺少证据时宁可无候选，也不使用标题补齐高级结论。

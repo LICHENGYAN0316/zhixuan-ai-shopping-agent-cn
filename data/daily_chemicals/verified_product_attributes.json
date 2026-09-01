@@ -1,0 +1,355 @@
+[
+  {
+    "source_product_id": "A520711852230",
+    "source_title_match": "雅漾 舒护活泉水喷雾300ml",
+    "canonical_brand": "Avène 雅漾",
+    "canonical_product_name": "雅漾舒护活泉水喷雾 300ml",
+    "variant": "300ml spray",
+    "size_value": 300,
+    "size_unit": "ml",
+    "category": "面部护理",
+    "product_type": "喷雾",
+    "match_status": "exact_name_size_current_cross_market",
+    "formula_market": "US official reference",
+    "formula_version_label": "current official reference; not asserted as the historical CN formula",
+    "formula_checked_at": "2026-09-01",
+    "ingredient_list_completeness": "full",
+    "ingredients": [
+      "Avène Thermal Spring Water",
+      "Nitrogen"
+    ],
+    "official_formulated_without": [
+      "fragrance",
+      "paraben",
+      "alcohol",
+      "mineral oil"
+    ],
+    "official_skin_types": [
+      "sensitive skin"
+    ],
+    "official_concerns": [
+      "soothing",
+      "comfort",
+      "skin balance"
+    ],
+    "brand_claims": [
+      {
+        "claim": "品牌官方称，该产品成分组成经临床证明可舒缓、柔和并安抚敏感肌。",
+        "claim_owner": "brand",
+        "evidence_method": "official product page and cited clinical footnotes",
+        "source_url": "https://www.aveneusa.com/thermal-spring-water-300ml",
+        "checked_at": "2026-09-01"
+      }
+    ],
+    "recommendation_eligibility": {
+      "basic_retrieval": true,
+      "efficacy": true,
+      "sensitive_skin": true,
+      "ingredient_avoidance": true
+    },
+    "evidence_sources": [
+      {
+        "source_kind": "brand_official_product_page",
+        "url": "https://www.aveneusa.com/thermal-spring-water-300ml",
+        "checked_at": "2026-09-01",
+        "supports": [
+          "name",
+          "size",
+          "ingredients",
+          "formulated_without",
+          "brand_claims",
+          "sensitive_skin_claim"
+        ]
+      }
+    ],
+    "notes": "当前美国官方参考，不能证明历史中国市场商品使用完全相同的配方。"
+  },
+  {
+    "source_product_id": "A15486609514",
+    "source_title_match": "innisfree/悦诗风吟控油矿物质散粉5g",
+    "canonical_brand": "innisfree 悦诗风吟",
+    "canonical_product_name": "悦诗风吟控油矿物质散粉 5g",
+    "variant": "Regular loose powder 5g",
+    "size_value": 5,
+    "size_unit": "g",
+    "category": "底妆",
+    "product_type": "散粉",
+    "match_status": "exact_name_size_current_cross_market",
+    "formula_market": "US official reference",
+    "formula_version_label": "current official reference; not asserted as the historical CN formula",
+    "formula_checked_at": "2026-09-01",
+    "ingredient_list_completeness": "full",
+    "ingredients": [
+      "Silica",
+      "Aluminum Starch Octenylsuccinate",
+      "Dimethicone/Vinyl Dimethicone Crosspolymer",
+      "Caprylic/Capric Triglyceride",
+      "Mica",
+      "Methicone",
+      "Ethylhexylglycerin",
+      "Dimethicone",
+      "Glyceryl Caprylate",
+      "Mineral Salts",
+      "Tocopherol"
+    ],
+    "official_formulated_without": [
+      "fragrance",
+      "mineral oil",
+      "paraben",
+      "phthalates",
+      "SLS",
+      "SLES",
+      "sulfates",
+      "talc",
+      "synthetic colors"
+    ],
+    "official_skin_types": [
+      "all skin types"
+    ],
+    "official_concerns": [
+      "excess sebum",
+      "shine control",
+      "visible pores"
+    ],
+    "brand_claims": [
+      {
+        "claim": "品牌官方称，该散粉可吸收多余皮脂、控制油光并在视觉上柔化毛孔。",
+        "claim_owner": "brand",
+        "evidence_method": "official product page",
+        "source_url": "https://us.innisfree.com/products/no-sebum-matte-mineral-setting-powder",
+        "checked_at": "2026-09-01"
+      }
+    ],
+    "recommendation_eligibility": {
+      "basic_retrieval": true,
+      "efficacy": true,
+      "sensitive_skin": false,
+      "ingredient_avoidance": true
+    },
+    "evidence_sources": [
+      {
+        "source_kind": "brand_official_product_page",
+        "url": "https://us.innisfree.com/products/no-sebum-matte-mineral-setting-powder",
+        "checked_at": "2026-09-01",
+        "supports": [
+          "name",
+          "size",
+          "ingredients",
+          "formulated_without",
+          "brand_claims",
+          "skin_types"
+        ]
+      }
+    ],
+    "notes": "当前美国官方参考。官方页也提醒配方可能变更，实际使用前应核对包装成分表。"
+  },
+  {
+    "source_product_id": "A18283802944",
+    "source_title_match": "Clinique/倩碧卓越润肤啫 天才黄油无油50ml",
+    "canonical_brand": "Clinique 倩碧",
+    "canonical_product_name": "倩碧卓越润肤啫喱（无油）50ml",
+    "variant": "50ml",
+    "size_value": 50,
+    "size_unit": "ml",
+    "category": "面部护理",
+    "product_type": "乳液",
+    "match_status": "exact_name_size_current_cross_market",
+    "formula_market": "US official reference",
+    "formula_version_label": "current official reference; not asserted as the historical CN formula",
+    "formula_checked_at": "2026-09-01",
+    "ingredient_list_completeness": "key_only",
+    "ingredients": [
+      "barley extract",
+      "sunflower seed cake",
+      "cucumber fruit extract"
+    ],
+    "official_formulated_without": [
+      "fragrance",
+      "paraben",
+      "phthalates",
+      "drying alcohol",
+      "SLS",
+      "SLES"
+    ],
+    "official_skin_types": [
+      "combination oily",
+      "oily",
+      "sensitive skin"
+    ],
+    "official_concerns": [
+      "dehydration",
+      "dry skin",
+      "oil-free hydration"
+    ],
+    "brand_claims": [
+      {
+        "claim": "品牌官方将该啫喱描述为适合偏油肤质的无油保湿产品，并声明可用于敏感肌。",
+        "claim_owner": "brand",
+        "evidence_method": "official product page",
+        "source_url": "https://www.clinique.com/product/1687/5047/skincare/moisturizers/dramatically-differenttm-moisturizing-gel",
+        "checked_at": "2026-09-01"
+      }
+    ],
+    "recommendation_eligibility": {
+      "basic_retrieval": true,
+      "efficacy": true,
+      "sensitive_skin": true,
+      "ingredient_avoidance": true
+    },
+    "evidence_sources": [
+      {
+        "source_kind": "brand_official_product_page",
+        "url": "https://www.clinique.com/product/1687/5047/skincare/moisturizers/dramatically-differenttm-moisturizing-gel",
+        "checked_at": "2026-09-01",
+        "supports": [
+          "name",
+          "size",
+          "key_ingredients",
+          "formulated_without",
+          "brand_claims",
+          "sensitive_skin_claim"
+        ]
+      }
+    ],
+    "notes": "本次官方页证据仅包含关键成分，不是完整成分表；成分避雷仅限官方明确列为不含的项目。"
+  },
+  {
+    "source_product_id": "A35459307117",
+    "source_title_match": "Clinique/倩碧润肤乳50ml 天才黄油有油",
+    "canonical_brand": "Clinique 倩碧",
+    "canonical_product_name": "倩碧卓越润肤乳 50ml",
+    "variant": "50ml",
+    "size_value": 50,
+    "size_unit": "ml",
+    "category": "面部护理",
+    "product_type": "乳液",
+    "match_status": "exact_name_size_current_cross_market",
+    "formula_market": "US official reference",
+    "formula_version_label": "current official reference; not asserted as the historical CN formula",
+    "formula_checked_at": "2026-09-01",
+    "ingredient_list_completeness": "key_only",
+    "ingredients": [
+      "urea",
+      "glycerin",
+      "pro-lipids"
+    ],
+    "official_formulated_without": [
+      "fragrance",
+      "paraben",
+      "phthalates",
+      "drying alcohol",
+      "SLS",
+      "SLES"
+    ],
+    "official_skin_types": [
+      "very dry",
+      "dry",
+      "dry combination",
+      "sensitive skin"
+    ],
+    "official_concerns": [
+      "dehydration",
+      "dry skin",
+      "skin barrier support"
+    ],
+    "brand_claims": [
+      {
+        "claim": "品牌官方称，该乳液提供 8 小时保湿、快速强化肌肤屏障，并声明可用于敏感肌。",
+        "claim_owner": "brand",
+        "evidence_method": "official product page",
+        "source_url": "https://www.clinique.com/product/1687/26651/skincare/moisturizers/dramatically-different-moisturizing-lotiontm",
+        "checked_at": "2026-09-01"
+      }
+    ],
+    "recommendation_eligibility": {
+      "basic_retrieval": true,
+      "efficacy": true,
+      "sensitive_skin": true,
+      "ingredient_avoidance": true
+    },
+    "evidence_sources": [
+      {
+        "source_kind": "brand_official_product_page",
+        "url": "https://www.clinique.com/product/1687/26651/skincare/moisturizers/dramatically-different-moisturizing-lotiontm",
+        "checked_at": "2026-09-01",
+        "supports": [
+          "name",
+          "size",
+          "key_ingredients",
+          "formulated_without",
+          "brand_claims",
+          "sensitive_skin_claim"
+        ]
+      }
+    ],
+    "notes": "本次官方页证据仅包含关键成分，不是完整成分表；成分避雷仅限官方明确列为不含的项目。"
+  },
+  {
+    "source_product_id": "A15332134505",
+    "source_title_match": "SK-II 神仙水护肤精华",
+    "canonical_brand": "SK-II",
+    "canonical_product_name": "SK-II 护肤精华露（神仙水）",
+    "variant": "size not recoverable from source title",
+    "size_value": null,
+    "size_unit": null,
+    "category": "面部护理",
+    "product_type": "精华水",
+    "match_status": "canonical_series_only",
+    "formula_market": "US official reference",
+    "formula_version_label": "current official reference; historical listing variant is not fully identified",
+    "formula_checked_at": "2026-09-01",
+    "ingredient_list_completeness": "full_current_reference",
+    "ingredients": [
+      "Galactomyces Ferment Filtrate",
+      "Butylene Glycol",
+      "Pentylene Glycol",
+      "Water",
+      "Sodium Benzoate",
+      "Methylparaben",
+      "Sorbic Acid"
+    ],
+    "official_formulated_without": [],
+    "official_skin_types": [
+      "normal",
+      "dry",
+      "oily",
+      "combination"
+    ],
+    "official_concerns": [
+      "fine lines",
+      "age spots",
+      "uneven texture",
+      "dullness",
+      "dryness"
+    ],
+    "brand_claims": [
+      {
+        "claim": "品牌官方将该精华露对应于干燥、暗沉、肤质不均、色斑与细纹等关注点。",
+        "claim_owner": "brand",
+        "evidence_method": "official product page",
+        "source_url": "https://www.sk-ii.com/products/facial-treatment-essence",
+        "checked_at": "2026-09-01"
+      }
+    ],
+    "recommendation_eligibility": {
+      "basic_retrieval": true,
+      "efficacy": false,
+      "sensitive_skin": false,
+      "ingredient_avoidance": false
+    },
+    "evidence_sources": [
+      {
+        "source_kind": "brand_official_product_page",
+        "url": "https://www.sk-ii.com/products/facial-treatment-essence",
+        "checked_at": "2026-09-01",
+        "supports": [
+          "current_series_name",
+          "current_ingredients",
+          "brand_claims",
+          "skin_types"
+        ]
+      }
+    ],
+    "notes": "仅完成系列层级的身份匹配。当前配方事实仅作参考，不进入敏感肌、功效或成分避雷推荐。"
+  }
+]

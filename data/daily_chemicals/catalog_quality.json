@@ -1,0 +1,43 @@
+{
+  "generated_schema_version": "1.0.0",
+  "marketplace": {
+    "source_kind": "offline_marketplace_product_snapshot",
+    "raw_rows": 27598,
+    "exact_duplicate_rows_removed": 86,
+    "duplicate_product_time_rows_resolved": 0,
+    "invalid_date_rows_excluded": 0,
+    "invalid_price_rows_excluded": 0,
+    "negative_signal_rows_excluded": 0,
+    "clean_snapshot_rows": 27512,
+    "unique_products": 3497,
+    "unique_shops": 22,
+    "products_missing_both_historical_signals": 301,
+    "historical_signal_coverage": 0.913926,
+    "price_completeness": 1.0,
+    "dates_exposed_in_public_catalog": false,
+    "customer_or_order_fields_exposed": false
+  },
+  "daily_workbook": {
+    "source_kind": "offline_daily_chemicals_sales_workbook",
+    "raw_order_rows": 31452,
+    "exact_duplicate_rows_removed": 6,
+    "invalid_or_out_of_range_date_rows_excluded": 1,
+    "invalid_numeric_rows_excluded": 4,
+    "orphan_product_rows_excluded": 1,
+    "amount_formula_mismatch_rows": 0,
+    "clean_rows_used_for_aggregate": 31440,
+    "aggregate_products": 122,
+    "customer_ids_exported": false,
+    "order_ids_exported": false,
+    "raw_locations_exported": false
+  },
+  "verified_attribute_rows": 5,
+  "sensitive_skin_eligible_products": 3,
+  "ingredient_avoidance_eligible_products": 4,
+  "efficacy_eligible_products": 4,
+  "truth_boundary": {
+    "historical_titles_are_unverified_claims": true,
+    "current_official_pages_do_not_prove_historical_formula_identity": true,
+    "sample_price_is_not_presented_as_live_market_data": true
+  }
+}

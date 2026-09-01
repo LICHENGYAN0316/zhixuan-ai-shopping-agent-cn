@@ -19,3 +19,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Data and third-party materials notice
+
+The MIT License above applies to the original source code and original
+documentation in this repository. It does not grant additional rights to any
+input dataset, third-party product name, trademark, brand material, official
+webpage content, or data derived from those materials. Those materials remain
+subject to their original rights, terms, and applicable law. No raw user,
+order-level, or transaction-level source data is licensed for redistribution
+by this notice.

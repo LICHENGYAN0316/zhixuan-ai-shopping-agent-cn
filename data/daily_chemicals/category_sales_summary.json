@@ -1,0 +1,978 @@
+[
+  {
+    "product_code": "X001",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 417,
+    "quantity": 377380,
+    "amount": 45662980.0
+  },
+  {
+    "product_code": "X002",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 390,
+    "quantity": 352680,
+    "amount": 49727880.0
+  },
+  {
+    "product_code": "X003",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 449,
+    "quantity": 394579,
+    "amount": 66289272.0
+  },
+  {
+    "product_code": "X004",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 410,
+    "quantity": 362151,
+    "amount": 76413861.0
+  },
+  {
+    "product_code": "X005",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 444,
+    "quantity": 407045,
+    "amount": 75303325.0
+  },
+  {
+    "product_code": "X006",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 36,
+    "quantity": 34547,
+    "amount": 5492973.0
+  },
+  {
+    "product_code": "X007",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 410,
+    "quantity": 358404,
+    "amount": 76340052.0
+  },
+  {
+    "product_code": "X008",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 477,
+    "quantity": 433798,
+    "amount": 51621962.0
+  },
+  {
+    "product_code": "X009",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 409,
+    "quantity": 358725,
+    "amount": 33002700.0
+  },
+  {
+    "product_code": "X010",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 395,
+    "quantity": 352208,
+    "amount": 20428064.0
+  },
+  {
+    "product_code": "X011",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 448,
+    "quantity": 384843,
+    "amount": 86974518.0
+  },
+  {
+    "product_code": "X012",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 74,
+    "quantity": 63490,
+    "amount": 15999480.0
+  },
+  {
+    "product_code": "X013",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 428,
+    "quantity": 370562,
+    "amount": 60772168.0
+  },
+  {
+    "product_code": "X014",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 445,
+    "quantity": 375945,
+    "amount": 32331270.0
+  },
+  {
+    "product_code": "X015",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 445,
+    "quantity": 415598,
+    "amount": 62755298.0
+  },
+  {
+    "product_code": "X016",
+    "category": "护肤品",
+    "subcategory": "面膜",
+    "order_count": 445,
+    "quantity": 408261,
+    "amount": 40417839.0
+  },
+  {
+    "product_code": "X017",
+    "category": "护肤品",
+    "subcategory": "眼霜",
+    "order_count": 375,
+    "quantity": 334768,
+    "amount": 71305584.0
+  },
+  {
+    "product_code": "X018",
+    "category": "护肤品",
+    "subcategory": "眼霜",
+    "order_count": 434,
+    "quantity": 387945,
+    "amount": 82244340.0
+  },
+  {
+    "product_code": "X019",
+    "category": "护肤品",
+    "subcategory": "眼霜",
+    "order_count": 418,
+    "quantity": 362422,
+    "amount": 76108620.0
+  },
+  {
+    "product_code": "X020",
+    "category": "护肤品",
+    "subcategory": "眼霜",
+    "order_count": 348,
+    "quantity": 308651,
+    "amount": 30865100.0
+  },
+  {
+    "product_code": "X021",
+    "category": "护肤品",
+    "subcategory": "眼霜",
+    "order_count": 434,
+    "quantity": 385830,
+    "amount": 22763970.0
+  },
+  {
+    "product_code": "X022",
+    "category": "护肤品",
+    "subcategory": "眼霜",
+    "order_count": 414,
+    "quantity": 373277,
+    "amount": 58977766.0
+  },
+  {
+    "product_code": "X023",
+    "category": "护肤品",
+    "subcategory": "眼霜",
+    "order_count": 468,
+    "quantity": 407229,
+    "amount": 95698815.0
+  },
+  {
+    "product_code": "X024",
+    "category": "护肤品",
+    "subcategory": "眼霜",
+    "order_count": 434,
+    "quantity": 391680,
+    "amount": 92044800.0
+  },
+  {
+    "product_code": "X025",
+    "category": "护肤品",
+    "subcategory": "眼霜",
+    "order_count": 436,
+    "quantity": 397611,
+    "amount": 40556322.0
+  },
+  {
+    "product_code": "X026",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 457,
+    "quantity": 393255,
+    "amount": 39718755.0
+  },
+  {
+    "product_code": "X027",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 425,
+    "quantity": 386227,
+    "amount": 63341228.0
+  },
+  {
+    "product_code": "X028",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 74,
+    "quantity": 65616,
+    "amount": 9186240.0
+  },
+  {
+    "product_code": "X029",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 447,
+    "quantity": 401863,
+    "amount": 61886902.0
+  },
+  {
+    "product_code": "X030",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 428,
+    "quantity": 367338,
+    "amount": 87059106.0
+  },
+  {
+    "product_code": "X031",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 422,
+    "quantity": 378806,
+    "amount": 32577316.0
+  },
+  {
+    "product_code": "X032",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 76,
+    "quantity": 62172,
+    "amount": 9823176.0
+  },
+  {
+    "product_code": "X033",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 75,
+    "quantity": 67599,
+    "amount": 11965023.0
+  },
+  {
+    "product_code": "X034",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 400,
+    "quantity": 360323,
+    "amount": 65578786.0
+  },
+  {
+    "product_code": "X035",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 402,
+    "quantity": 340300,
+    "amount": 25862800.0
+  },
+  {
+    "product_code": "X036",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 414,
+    "quantity": 370999,
+    "amount": 36728901.0
+  },
+  {
+    "product_code": "X037",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 346,
+    "quantity": 308601,
+    "amount": 60177195.0
+  },
+  {
+    "product_code": "X038",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 430,
+    "quantity": 367883,
+    "amount": 37524066.0
+  },
+  {
+    "product_code": "X039",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 392,
+    "quantity": 339801,
+    "amount": 36698508.0
+  },
+  {
+    "product_code": "X040",
+    "category": "护肤品",
+    "subcategory": "面霜",
+    "order_count": 407,
+    "quantity": 356122,
+    "amount": 50569324.0
+  },
+  {
+    "product_code": "X041",
+    "category": "护肤品",
+    "subcategory": "洁面乳",
+    "order_count": 394,
+    "quantity": 329978,
+    "amount": 69955336.0
+  },
+  {
+    "product_code": "X042",
+    "category": "护肤品",
+    "subcategory": "洁面乳",
+    "order_count": 409,
+    "quantity": 358762,
+    "amount": 57043158.0
+  },
+  {
+    "product_code": "X043",
+    "category": "护肤品",
+    "subcategory": "洁面乳",
+    "order_count": 95,
+    "quantity": 77003,
+    "amount": 14322558.0
+  },
+  {
+    "product_code": "X044",
+    "category": "护肤品",
+    "subcategory": "洁面乳",
+    "order_count": 435,
+    "quantity": 411443,
+    "amount": 71591082.0
+  },
+  {
+    "product_code": "X045",
+    "category": "护肤品",
+    "subcategory": "洁面乳",
+    "order_count": 433,
+    "quantity": 391010,
+    "amount": 80157050.0
+  },
+  {
+    "product_code": "X046",
+    "category": "护肤品",
+    "subcategory": "洁面乳",
+    "order_count": 432,
+    "quantity": 359824,
+    "amount": 86717584.0
+  },
+  {
+    "product_code": "X047",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 474,
+    "quantity": 431454,
+    "amount": 82839168.0
+  },
+  {
+    "product_code": "X048",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 420,
+    "quantity": 379214,
+    "amount": 23132054.0
+  },
+  {
+    "product_code": "X049",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 424,
+    "quantity": 371335,
+    "amount": 83921710.0
+  },
+  {
+    "product_code": "X050",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 453,
+    "quantity": 400464,
+    "amount": 57266352.0
+  },
+  {
+    "product_code": "X051",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 442,
+    "quantity": 381292,
+    "amount": 77402276.0
+  },
+  {
+    "product_code": "X052",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 90,
+    "quantity": 72286,
+    "amount": 7373172.0
+  },
+  {
+    "product_code": "X053",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 76,
+    "quantity": 65248,
+    "amount": 6785792.0
+  },
+  {
+    "product_code": "X054",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 382,
+    "quantity": 342684,
+    "amount": 28442772.0
+  },
+  {
+    "product_code": "X055",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 410,
+    "quantity": 361609,
+    "amount": 80277198.0
+  },
+  {
+    "product_code": "X056",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 357,
+    "quantity": 279193,
+    "amount": 65051969.0
+  },
+  {
+    "product_code": "X057",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 454,
+    "quantity": 404273,
+    "amount": 99046885.0
+  },
+  {
+    "product_code": "X058",
+    "category": "护肤品",
+    "subcategory": "爽肤水",
+    "order_count": 44,
+    "quantity": 34635,
+    "amount": 8277765.0
+  },
+  {
+    "product_code": "X059",
+    "category": "护肤品",
+    "subcategory": "隔离霜",
+    "order_count": 446,
+    "quantity": 406336,
+    "amount": 22754816.0
+  },
+  {
+    "product_code": "X060",
+    "category": "护肤品",
+    "subcategory": "隔离霜",
+    "order_count": 32,
+    "quantity": 30220,
+    "amount": 3082440.0
+  },
+  {
+    "product_code": "X061",
+    "category": "护肤品",
+    "subcategory": "隔离霜",
+    "order_count": 410,
+    "quantity": 372396,
+    "amount": 75596388.0
+  },
+  {
+    "product_code": "X062",
+    "category": "护肤品",
+    "subcategory": "隔离霜",
+    "order_count": 450,
+    "quantity": 403657,
+    "amount": 96474023.0
+  },
+  {
+    "product_code": "X063",
+    "category": "护肤品",
+    "subcategory": "隔离霜",
+    "order_count": 84,
+    "quantity": 81495,
+    "amount": 13202190.0
+  },
+  {
+    "product_code": "X064",
+    "category": "护肤品",
+    "subcategory": "隔离霜",
+    "order_count": 405,
+    "quantity": 349525,
+    "amount": 52428750.0
+  },
+  {
+    "product_code": "X065",
+    "category": "护肤品",
+    "subcategory": "隔离霜",
+    "order_count": 414,
+    "quantity": 394221,
+    "amount": 55190940.0
+  },
+  {
+    "product_code": "X066",
+    "category": "护肤品",
+    "subcategory": "隔离霜",
+    "order_count": 86,
+    "quantity": 86981,
+    "amount": 9828853.0
+  },
+  {
+    "product_code": "X067",
+    "category": "护肤品",
+    "subcategory": "隔离霜",
+    "order_count": 401,
+    "quantity": 363293,
+    "amount": 77018116.0
+  },
+  {
+    "product_code": "X068",
+    "category": "护肤品",
+    "subcategory": "防晒霜",
+    "order_count": 413,
+    "quantity": 361942,
+    "amount": 81436950.0
+  },
+  {
+    "product_code": "X069",
+    "category": "护肤品",
+    "subcategory": "防晒霜",
+    "order_count": 428,
+    "quantity": 377257,
+    "amount": 94691507.0
+  },
+  {
+    "product_code": "X070",
+    "category": "护肤品",
+    "subcategory": "防晒霜",
+    "order_count": 342,
+    "quantity": 298970,
+    "amount": 72350740.0
+  },
+  {
+    "product_code": "X071",
+    "category": "护肤品",
+    "subcategory": "防晒霜",
+    "order_count": 435,
+    "quantity": 393892,
+    "amount": 99654676.0
+  },
+  {
+    "product_code": "X072",
+    "category": "护肤品",
+    "subcategory": "防晒霜",
+    "order_count": 427,
+    "quantity": 368041,
+    "amount": 22818542.0
+  },
+  {
+    "product_code": "X073",
+    "category": "护肤品",
+    "subcategory": "防晒霜",
+    "order_count": 73,
+    "quantity": 61353,
+    "amount": 12822777.0
+  },
+  {
+    "product_code": "X074",
+    "category": "护肤品",
+    "subcategory": "防晒霜",
+    "order_count": 79,
+    "quantity": 78607,
+    "amount": 6838809.0
+  },
+  {
+    "product_code": "X075",
+    "category": "护肤品",
+    "subcategory": "防晒霜",
+    "order_count": 438,
+    "quantity": 379811,
+    "amount": 47856186.0
+  },
+  {
+    "product_code": "X076",
+    "category": "护肤品",
+    "subcategory": "防晒霜",
+    "order_count": 72,
+    "quantity": 68737,
+    "amount": 7904755.0
+  },
+  {
+    "product_code": "X077",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 256,
+    "quantity": 221184,
+    "amount": 54632448.0
+  },
+  {
+    "product_code": "X078",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 428,
+    "quantity": 365975,
+    "amount": 42453100.0
+  },
+  {
+    "product_code": "X079",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 402,
+    "quantity": 372141,
+    "amount": 47634048.0
+  },
+  {
+    "product_code": "X080",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 462,
+    "quantity": 406829,
+    "amount": 29291688.0
+  },
+  {
+    "product_code": "X081",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 9,
+    "quantity": 9591,
+    "amount": 1956564.0
+  },
+  {
+    "product_code": "X082",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 33,
+    "quantity": 30548,
+    "amount": 3604664.0
+  },
+  {
+    "product_code": "X083",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 68,
+    "quantity": 56825,
+    "amount": 11819600.0
+  },
+  {
+    "product_code": "X084",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 40,
+    "quantity": 33700,
+    "amount": 7481400.0
+  },
+  {
+    "product_code": "X085",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 423,
+    "quantity": 386164,
+    "amount": 89976212.0
+  },
+  {
+    "product_code": "X086",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 69,
+    "quantity": 59388,
+    "amount": 5463696.0
+  },
+  {
+    "product_code": "X087",
+    "category": "彩妆",
+    "subcategory": "口红",
+    "order_count": 78,
+    "quantity": 70679,
+    "amount": 6078394.0
+  },
+  {
+    "product_code": "X088",
+    "category": "彩妆",
+    "subcategory": "粉底",
+    "order_count": 419,
+    "quantity": 366959,
+    "amount": 45869875.0
+  },
+  {
+    "product_code": "X089",
+    "category": "彩妆",
+    "subcategory": "粉底",
+    "order_count": 417,
+    "quantity": 358539,
+    "amount": 37288056.0
+  },
+  {
+    "product_code": "X090",
+    "category": "彩妆",
+    "subcategory": "粉底",
+    "order_count": 37,
+    "quantity": 28305,
+    "amount": 5576085.0
+  },
+  {
+    "product_code": "X091",
+    "category": "彩妆",
+    "subcategory": "粉底",
+    "order_count": 338,
+    "quantity": 291351,
+    "amount": 62349114.0
+  },
+  {
+    "product_code": "X092",
+    "category": "彩妆",
+    "subcategory": "粉底",
+    "order_count": 78,
+    "quantity": 61991,
+    "amount": 4153397.0
+  },
+  {
+    "product_code": "X093",
+    "category": "彩妆",
+    "subcategory": "粉底",
+    "order_count": 10,
+    "quantity": 10088,
+    "amount": 1039064.0
+  },
+  {
+    "product_code": "X094",
+    "category": "彩妆",
+    "subcategory": "粉底",
+    "order_count": 87,
+    "quantity": 71388,
+    "amount": 6710472.0
+  },
+  {
+    "product_code": "X095",
+    "category": "彩妆",
+    "subcategory": "眼影",
+    "order_count": 81,
+    "quantity": 65772,
+    "amount": 7037604.0
+  },
+  {
+    "product_code": "X096",
+    "category": "彩妆",
+    "subcategory": "眼影",
+    "order_count": 43,
+    "quantity": 33790,
+    "amount": 7501380.0
+  },
+  {
+    "product_code": "X097",
+    "category": "彩妆",
+    "subcategory": "眼影",
+    "order_count": 82,
+    "quantity": 68965,
+    "amount": 3862040.0
+  },
+  {
+    "product_code": "X098",
+    "category": "彩妆",
+    "subcategory": "眼影",
+    "order_count": 39,
+    "quantity": 40348,
+    "amount": 2259488.0
+  },
+  {
+    "product_code": "X099",
+    "category": "彩妆",
+    "subcategory": "眼影",
+    "order_count": 13,
+    "quantity": 13948,
+    "amount": 1506384.0
+  },
+  {
+    "product_code": "X100",
+    "category": "彩妆",
+    "subcategory": "眼影",
+    "order_count": 84,
+    "quantity": 72972,
+    "amount": 5837760.0
+  },
+  {
+    "product_code": "X101",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 80,
+    "quantity": 71791,
+    "amount": 12419843.0
+  },
+  {
+    "product_code": "X102",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 81,
+    "quantity": 74497,
+    "amount": 11919520.0
+  },
+  {
+    "product_code": "X103",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 70,
+    "quantity": 72796,
+    "amount": 14704792.0
+  },
+  {
+    "product_code": "X104",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 77,
+    "quantity": 65705,
+    "amount": 12155425.0
+  },
+  {
+    "product_code": "X105",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 61,
+    "quantity": 55556,
+    "amount": 5277820.0
+  },
+  {
+    "product_code": "X106",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 69,
+    "quantity": 60494,
+    "amount": 13550656.0
+  },
+  {
+    "product_code": "X107",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 26,
+    "quantity": 22626,
+    "amount": 4117932.0
+  },
+  {
+    "product_code": "X108",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 92,
+    "quantity": 76451,
+    "amount": 17048573.0
+  },
+  {
+    "product_code": "X109",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 10,
+    "quantity": 8626,
+    "amount": 1552680.0
+  },
+  {
+    "product_code": "X110",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 38,
+    "quantity": 32878,
+    "amount": 6707112.0
+  },
+  {
+    "product_code": "X111",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 12,
+    "quantity": 13444,
+    "amount": 2688800.0
+  },
+  {
+    "product_code": "X112",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 10,
+    "quantity": 6544,
+    "amount": 628224.0
+  },
+  {
+    "product_code": "X113",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 10,
+    "quantity": 8965,
+    "amount": 1048905.0
+  },
+  {
+    "product_code": "X114",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 10,
+    "quantity": 7565,
+    "amount": 1127185.0
+  },
+  {
+    "product_code": "X115",
+    "category": "彩妆",
+    "subcategory": "睫毛膏",
+    "order_count": 9,
+    "quantity": 9461,
+    "amount": 1286696.0
+  },
+  {
+    "product_code": "X116",
+    "category": "彩妆",
+    "subcategory": "蜜粉",
+    "order_count": 7,
+    "quantity": 4603,
+    "amount": 676641.0
+  },
+  {
+    "product_code": "X117",
+    "category": "彩妆",
+    "subcategory": "蜜粉",
+    "order_count": 9,
+    "quantity": 9246,
+    "amount": 1044798.0
+  },
+  {
+    "product_code": "X118",
+    "category": "彩妆",
+    "subcategory": "蜜粉",
+    "order_count": 5,
+    "quantity": 1721,
+    "amount": 409598.0
+  },
+  {
+    "product_code": "X119",
+    "category": "彩妆",
+    "subcategory": "蜜粉",
+    "order_count": 9,
+    "quantity": 8796,
+    "amount": 1125888.0
+  },
+  {
+    "product_code": "X120",
+    "category": "彩妆",
+    "subcategory": "蜜粉",
+    "order_count": 6,
+    "quantity": 6898,
+    "amount": 1469274.0
+  },
+  {
+    "product_code": "X121",
+    "category": "彩妆",
+    "subcategory": "蜜粉",
+    "order_count": 6,
+    "quantity": 6428,
+    "amount": 488528.0
+  },
+  {
+    "product_code": "X122",
+    "category": "彩妆",
+    "subcategory": "蜜粉",
+    "order_count": 10,
+    "quantity": 7842,
+    "amount": 658728.0
+  }
+]
