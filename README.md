@@ -1,10 +1,10 @@
-# 智选 Agent：离线日化商品智能选购
+# 智选 Agent：日化用品智能推荐
 
-## [立即体验在线演示 →](https://zhixuan-agent-cn.plupluto.chatgpt.site)
+## [立即体验智选 Agent →](https://zhixuan-agent-cn.plupluto.chatgpt.site)
 
 无需登录。用户可以用中文描述预算、日化品类、肤质、希望获得的功效和需要避开的成分；智选会先整理需求，再从本地商品目录返回可比较的候选与证据说明。
 
-**[打开在线演示](https://zhixuan-agent-cn.plupluto.chatgpt.site)** · [阅读项目文档](#作品集文档) · [查看复现方法](#本地复现)
+**[打开智选 Agent](https://zhixuan-agent-cn.plupluto.chatgpt.site)** · [阅读项目文档](#作品集文档) · [查看复现方法](#本地复现)
 
 **[查看 Figma 设计与交互原型](https://www.figma.com/design/0cQqKzVoOS9376uWrMgwGV)** · [阅读设计交付说明](design/figma/README.md)
 
@@ -17,7 +17,7 @@
 | 模块 | 实际内容 |
 |---|---|
 | 商品目录 | 3,497 个去重商品、22 个店铺字段；样本价字段完整率 100%，历史销量或评论信号覆盖率 91.3926% |
-| 豆包需求理解 | `/api/intent` 在服务端使用 Ark Responses API 的严格 Function Calling；只发送当前需求文本和输出结构 |
+| 豆包需求理解 | `/api/intent` 在服务端使用 Agent Plan Responses API 的命名 Function Calling，并在服务端校验完整参数；只发送当前需求文本和输出结构 |
 | 本地降级 | 缺少 `ARK_API_KEY`、6 秒超时、上游错误或函数调用无效时，返回确定性本地解析结果 |
 | 基础检索 | 按品类、产品类型、预算区间和品牌条件过滤，再结合需求词、样本价、证据与历史热度排序 |
 | 官方参考 | 5 个商品具有人工作成的当前品牌官方参考；其中敏感肌资格 3 个、成分避雷资格 4 个、功效资格 4 个 |
@@ -28,16 +28,16 @@
 
 ```mermaid
 flowchart LR
-    A[当前中文需求] --> B[/api/intent]
-    B --> C[豆包 Function Calling]
-    B -->|缺 Key / 超时 / 上游失败| D[本地规则解析]
-    C --> E[normalizeIntent]
+    A["当前中文需求"] --> B["/api/intent"]
+    B --> C["豆包 Function Calling"]
+    B -->|"缺 Key / 超时 / 上游失败"| D["本地规则解析"]
+    C --> E["normalizeIntent"]
     D --> E
-    E -->|缺预算| F[预算澄清]
-    E -->|预算完整| G[本地商品过滤]
-    G --> H[核实资格门槛]
-    H --> I[可解释排序]
-    I --> J[Top 3 与证据说明]
+    E -->|"缺预算"| F["预算澄清"]
+    E -->|"预算完整"| G["本地商品过滤"]
+    G --> H["核实资格门槛"]
+    H --> I["可解释排序"]
+    I --> J["Top 3 与证据说明"]
 ```
 
 豆包请求设置 `store: false`。商品目录、官方参考表和销售聚合不会进入模型请求。模型只负责需求字段抽取；商品名称、成分、品牌声明、样本价和推荐结果均由本地数据与代码决定。
@@ -79,8 +79,8 @@ cp .env.example .env.local
 
 ```bash
 ARK_API_KEY=
-ARK_MODEL=doubao-seed-2-0-lite-260215
-ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+ARK_MODEL=doubao-seed-2.0-lite
+ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/plan/v3
 BEAUTY_CSV_PATH="/absolute/path/to/beauty-snapshot.csv"
 DAILY_XLSX_PATH="/absolute/path/to/daily-chemicals.xlsx"
 ```
@@ -105,6 +105,8 @@ npm run dev
 ```
 
 打开 `http://localhost:3000`。`.env*` 已被 Git 忽略，仅 `.env.example` 可提交；不要把真实密钥写入代码、JSON、截图、日志或提交记录。
+
+部署使用 **Agent Plan 专属 Key**。它必须配合 `/api/plan/v3`；通用 API Key 使用普通 `/api/v3`，两类 Key 不混用。智选直接指定 `doubao-seed-2.0-lite`，避免自动路由切换模型，并关闭深度思考以降低需求抽取延迟。
 
 ## 目录结构
 

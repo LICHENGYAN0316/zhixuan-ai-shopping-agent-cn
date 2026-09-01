@@ -44,7 +44,7 @@
 
 1. 用户输入“预算 200 元，敏感肌想保湿，避开香精”。
 2. 浏览器向 `/api/intent` 发送当前需求文本。
-3. 服务端使用豆包严格 Function Calling；缺 Key、超时、上游失败或函数调用无效时返回本地解析结果。
+3. 服务端强制豆包调用命名 Function，并校验完整参数；缺 Key、超时、上游失败或函数调用无效时返回本地解析结果。
 4. `normalizeIntent` 把远端字段转成应用使用的 `Intent`。
 5. 如果预算上限为空，系统进入既有预算澄清页；当前代码没有其他专门的澄清 UI。
 6. 检索按品类、产品类型、预算区间、排除品牌和高级资格过滤。
@@ -56,7 +56,7 @@
 | 编号 | 功能 | 实际验收 |
 |---|---|---|
 | F1 | 服务端需求解析 | `POST /api/intent` 接受 1–500 字需求；`Content-Length` 大于 4,096 字节时返回 413 |
-| F2 | 豆包调用 | 使用 `ARK_API_KEY`、`ARK_MODEL`、受限 `ARK_BASE_URL`；`store:false`；严格函数 `extract_personal_care_intent` |
+| F2 | 豆包调用 | 使用 `ARK_API_KEY`、`ARK_MODEL`、受限 `ARK_BASE_URL`；`store:false`；强制调用 `extract_personal_care_intent` 并由服务端校验字段 |
 | F3 | 降级 | 缺 Key、6 秒超时、上游非成功、缺函数调用或参数无效时返回 `provider=local-fallback` |
 | F4 | 预算澄清 | 预算为空时返回一个预算问题；选择预算后自动继续 |
 | F5 | 基础召回 | 品类、产品类型、`budgetMin`、预算上限和排除品牌执行硬过滤 |

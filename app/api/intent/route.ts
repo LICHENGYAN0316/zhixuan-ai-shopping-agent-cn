@@ -3,8 +3,8 @@ import { normalizeIntent, understandIntent } from '../../../lib/agent';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3';
-const DEFAULT_MODEL = 'doubao-seed-2-0-lite-260215';
+const DEFAULT_BASE_URL = 'https://ark.cn-beijing.volces.com/api/plan/v3';
+const DEFAULT_MODEL = 'doubao-seed-2.0-lite';
 const RETRYABLE_STATUS = new Set([429, 502, 503, 504]);
 
 const intentParameters = {
@@ -49,6 +49,48 @@ const intentParameters = {
   ],
 } as const;
 
+const categoryValues = new Set(intentParameters.properties.category.enum);
+const skinTypeValues = new Set(intentParameters.properties.skinType.enum);
+const concernValues = new Set(intentParameters.properties.concerns.items.enum);
+const clarificationValues = new Set(['category', 'budget', 'skin_type', 'concern']);
+const intentFields = new Set(intentParameters.required);
+
+function isNullableNumber(value: unknown) {
+  return value === null || (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 50_000);
+}
+
+function isNullableBoolean(value: unknown) {
+  return value === null || typeof value === 'boolean';
+}
+
+function isStringArray(value: unknown, maximum: number, allowed?: Set<string>) {
+  return Array.isArray(value)
+    && value.length <= maximum
+    && value.every((item) => typeof item === 'string' && item.length > 0 && item.length <= 80 && (!allowed || allowed.has(item)));
+}
+
+function isIntentArguments(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  if (!intentParameters.required.every((key) => Object.hasOwn(record, key))) return false;
+  if (!Object.keys(record).every((key) => intentFields.has(key as typeof intentParameters.required[number]))) return false;
+  if (typeof record.category !== 'string' || !categoryValues.has(record.category as typeof intentParameters.properties.category.enum[number])) return false;
+  if (!isStringArray(record.productTypes, 8)) return false;
+  if (!isNullableNumber(record.budgetMin) || !isNullableNumber(record.budgetMax)) return false;
+  if (typeof record.skinType !== 'string' || !skinTypeValues.has(record.skinType as typeof intentParameters.properties.skinType.enum[number])) return false;
+  if (!isNullableBoolean(record.sensitiveSkin)) return false;
+  if (!isStringArray(record.concerns, 10, concernValues as Set<string>)) return false;
+  if (!isStringArray(record.desiredEffects, 10)) return false;
+  if (!isStringArray(record.avoidIngredients, 12) || !isStringArray(record.preferredIngredients, 12)) return false;
+  if (!isNullableBoolean(record.avoidFragrance)) return false;
+  if (!isStringArray(record.preferredBrands, 8) || !isStringArray(record.excludedBrands, 8)) return false;
+  if (!isStringArray(record.keywords, 16)) return false;
+  if (typeof record.needsClarification !== 'boolean') return false;
+  if (record.clarificationField !== null && (typeof record.clarificationField !== 'string' || !clarificationValues.has(record.clarificationField))) return false;
+  if (record.needsClarification && record.clarificationField === null) return false;
+  return typeof record.confidence === 'number' && Number.isFinite(record.confidence) && record.confidence >= 0 && record.confidence <= 1;
+}
+
 function fallback(query: string, reason: string) {
   return NextResponse.json(
     { intent: understandIntent(query), provider: 'local-fallback', reason },
@@ -62,10 +104,12 @@ function sleep(milliseconds: number) {
 
 async function callArk(query: string, apiKey: string, model: string, signal: AbortSignal) {
   const configured = process.env.ARK_BASE_URL?.trim();
-  const baseUrl = configured?.startsWith('https://ark.cn-beijing.volces.com/api/v3') ? configured.replace(/\/$/, '') : DEFAULT_BASE_URL;
+  const normalizedBaseUrl = configured?.replace(/\/+$/, '');
+  const baseUrl = normalizedBaseUrl === DEFAULT_BASE_URL ? normalizedBaseUrl : DEFAULT_BASE_URL;
   const body = {
     model,
     store: false,
+    thinking: { type: 'disabled' },
     input: [
       {
         role: 'system',
@@ -78,7 +122,6 @@ async function callArk(query: string, apiKey: string, model: string, signal: Abo
         type: 'function',
         name: 'extract_personal_care_intent',
         description: '抽取日化与美妆选品需求，仅输出用户显式表达或高置信推断的约束。',
-        strict: true,
         parameters: intentParameters,
       },
     ],
@@ -132,8 +175,13 @@ export async function POST(request: Request) {
     };
     const call = data.output?.find((item) => item.type === 'function_call' && item.name === 'extract_personal_care_intent');
     if (!call?.arguments) return fallback(query, 'missing_function_call');
-    const parsed = typeof call.arguments === 'string' ? JSON.parse(call.arguments) : call.arguments;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return fallback(query, 'invalid_function_arguments');
+    let parsed: unknown;
+    try {
+      parsed = typeof call.arguments === 'string' ? JSON.parse(call.arguments) : call.arguments;
+    } catch {
+      return fallback(query, 'invalid_function_arguments');
+    }
+    if (!isIntentArguments(parsed)) return fallback(query, 'invalid_function_arguments');
     const intent = normalizeIntent({ ...parsed, provider: 'doubao' }, query);
     return NextResponse.json(
       { intent, provider: 'doubao' },

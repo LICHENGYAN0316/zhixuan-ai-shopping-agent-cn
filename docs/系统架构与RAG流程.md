@@ -5,9 +5,9 @@
 ```mermaid
 flowchart TD
     U[1–500 字当前需求] --> API[POST /api/intent]
-    API -->|有 ARK_API_KEY| ARK[Ark Responses API]
+    API -->|有 ARK_API_KEY| ARK[Agent Plan Responses API]
     API -->|缺 Key / 超时 / 上游失败| LOCAL[understandIntent]
-    ARK --> FC[严格 Function Calling]
+    ARK --> FC[命名 Function Calling]
     FC --> N[normalizeIntent]
     LOCAL --> N
     N -->|缺预算| Q[预算澄清]
@@ -85,13 +85,15 @@ CSV
 - 空字符串或长度超过 500 字返回 400；
 - 正常豆包结果与本地降级结果显式返回 `Cache-Control: no-store`；当前 400/413 输入错误分支没有单独设置该响应头。
 
-### 4.2 Ark 调用
+### 4.2 Agent Plan 调用
 
-- 默认地址：`https://ark.cn-beijing.volces.com/api/v3`；
-- `ARK_BASE_URL` 只有以上述官方前缀开头时才会采用；
-- 默认模型：`doubao-seed-2-0-lite-260215`，可由 `ARK_MODEL` 覆盖；
+- 默认地址：`https://ark.cn-beijing.volces.com/api/plan/v3`；
+- `ARK_BASE_URL` 只有与上述 Agent Plan 官方地址完全一致时才会采用，其他值回退到默认地址；
+- 默认模型：`doubao-seed-2.0-lite`，可由 `ARK_MODEL` 覆盖；
+- 当前配置对应 Agent Plan 专属 Key，不与普通 `/api/v3` 的通用 API Key 混用；
+- 请求设置 `thinking: { "type": "disabled" }`，让结构化需求抽取保持较低延迟；
 - `store: false`；
-- 严格函数名：`extract_personal_care_intent`；
+- 强制函数名：`extract_personal_care_intent`，返回字段由服务端执行完整类型、枚举、长度和范围校验；
 - 429、502、503、504 最多重试一次，退避 220–399 ms；
 - 整体 AbortController 超时为 6 秒。
 

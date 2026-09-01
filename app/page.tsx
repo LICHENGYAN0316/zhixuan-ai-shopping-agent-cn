@@ -97,7 +97,7 @@ function Header({ view, onNavigate }: { view: View; onNavigate: (next: View) => 
         <button className={planActive ? 'is-active' : ''} type="button" onClick={() => onNavigate('results')}>我的方案</button>
         <button className={view === 'project' ? 'is-active' : ''} type="button" onClick={() => onNavigate('project')}>项目说明</button>
       </nav>
-      <span className="mobile-demo-label">公开演示</span>
+      <span className="mobile-demo-label">在线服务</span>
     </header>
   );
 }
@@ -367,7 +367,7 @@ export default function Home() {
     if (view === 'welcome') return (
       <section className="welcome-view">
         <div className="hero-copy">
-          <span className="demo-chip"><span />公开演示版 · 离线日化历史数据</span>
+          <span className="demo-chip"><span />在线体验 · 日化用品智能推荐</span>
           <h1 data-view-title tabIndex={-1}>把复杂参数，变成<br />适合你的选择</h1>
           <p>告诉我预算、肤质、想要的功效和需要避开的成分。智选会整理约束，再给出有依据、也说明证据边界的候选方案。</p>
           <div className="hero-actions">
@@ -378,13 +378,13 @@ export default function Home() {
             <span>你可以这样说</span><strong>“{defaultNeed}”</strong>
           </button>
           <div className="demo-disclosure"><Info aria-hidden="true" size={16} />豆包只解析当前需求；商品检索与证据约束在本地完成</div>
-          {dataError && <div className="inline-error"><span>演示数据暂时未载入。</span><button type="button" onClick={retryData}>重新载入</button></div>}
+          {dataError && <div className="inline-error"><span>商品数据暂时未载入。</span><button type="button" onClick={retryData}>重新载入</button></div>}
         </div>
         <div className="decision-preview">
           <div className="preview-heading"><h2>正在形成你的决策依据</h2><StatusChip tone={dataReady ? 'success' : 'warning'}>{dataReady ? '需求已确认' : '界面结构预览'}</StatusChip></div>
           <div className="preview-requirements"><span>面部护理</span><span>≤ ¥200</span><span>敏感肌</span><span>避开香精</span></div>
           <article className="preview-card">
-            <div><span className="priority-label">优先候选 01</span><strong>{previewTop ? '需求匹配分 ' + score(previewTop.score) : '等待演示数据'}</strong></div>
+            <div><span className="priority-label">优先候选 01</span><strong>{previewTop ? '需求匹配分 ' + score(previewTop.score) : '等待商品数据'}</strong></div>
             <h3>{previewTop?.product.name ?? '候选方案载入中'}</h3>
             <p>{previewTop?.product.description ?? '数据就绪后，这里会展示与预算、场景和优先条件对应的候选解释。'}</p>
             <div className="preview-tradeoff"><span>需要接受</span>{previewTop?.product.limitations ?? '同时说明候选的主要取舍'}</div>
@@ -419,7 +419,7 @@ export default function Home() {
               </div>
             )}
             {response && <div className="requirement-summary">{intentChips.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>}
-            {dataError && <div className="inline-error"><span>演示数据暂时未载入。</span><button type="button" onClick={retryData}>重新载入</button></div>}
+            {dataError && <div className="inline-error"><span>商品数据暂时未载入。</span><button type="button" onClick={retryData}>重新载入</button></div>}
             <div className="composer-footer"><small>Ctrl / Command + Enter 快速提交</small><Button type="submit" disabled={!dataReady || !query.trim()} icon={<ArrowRight aria-hidden="true" size={16} />}>确认需求并推荐</Button></div>
           </form>
         </div>
@@ -573,10 +573,10 @@ export default function Home() {
         <div className="project-hero">
           <div>
             <span>项目说明 · 可复现 AI 产品作品集</span><h1 data-view-title tabIndex={-1}>从需求理解，到有依据的推荐决策</h1>
-            <p>智选是一个面向中文日化选品的公开演示：豆包在服务端解析用户需求，本地从清洗后的历史商品快照中检索，并以官方核实属性约束敏感肌、成分避雷与功效推荐。</p>
+            <p>智选是一个面向中文日化选品的在线 Agent：豆包在服务端解析用户需求，本地从清洗后的历史商品快照中检索，并以官方核实属性约束敏感肌、成分避雷与功效推荐。</p>
             <div className="project-actions"><Button onClick={() => navigate('welcome')} icon={<ArrowRight size={16} />}>体验智能导购</Button><a className="ui-button ui-button-secondary" href={githubBase} target="_blank" rel="noreferrer"><span>查看 GitHub</span><GithubLogo size={17} /></a><a className="ui-button ui-button-ghost" href={figmaUrl} target="_blank" rel="noreferrer"><span>查看 Figma</span></a></div>
           </div>
-          <div className="project-boundary"><ShieldCheck size={28} /><span>公开演示边界</span><p>不公开客户或订单明细，不调用实时商品服务，不用历史标题推断敏感肌安全性、完整成分或产品功效。</p></div>
+          <div className="project-boundary"><ShieldCheck size={28} /><span>服务边界</span><p>不公开客户或订单明细，不调用实时商品服务，不用历史标题推断敏感肌安全性、完整成分或产品功效。</p></div>
         </div>
         <div className="project-metrics">
           <MetricCard label="UNIQUE PRODUCTS" value={metrics?.dataset.products?.toLocaleString('zh-CN') ?? '—'} detail="去重后的历史商品记录" tone="accent" />
@@ -626,7 +626,7 @@ export default function Home() {
     <main className={'app-shell view-' + view}>
       <Header view={view} onNavigate={navigate} />
       {main}
-      <footer className="site-footer"><div><Logo /><span>公开展示版 · 离线日化历史数据与核实属性</span></div><a href={githubBase} target="_blank" rel="noreferrer"><GithubLogo size={17} />GitHub 项目</a></footer>
+      <footer className="site-footer"><div><Logo /><span>日化用品在线 Agent · 历史数据与核实属性</span></div><a href={githubBase} target="_blank" rel="noreferrer"><GithubLogo size={17} />GitHub 项目</a></footer>
       <MobileNav view={view} onNavigate={navigate} />
     </main>
   );
