@@ -4,32 +4,39 @@
 
 ```mermaid
 flowchart TD
-    U[1–500 字当前需求] --> API[POST /api/intent]
-    API -->|有 ARK_API_KEY| ARK[Agent Plan Responses API]
-    API -->|缺 Key / 超时 / 上游失败| LOCAL[understandIntent]
-    ARK --> FC[命名 Function Calling]
-    FC --> N[normalizeIntent]
+    U["1–500 字当前需求"] --> API["POST /api/intent"]
+    API -->|"有 ARK_API_KEY"| ARK["Agent Plan Responses API"]
+    API -->|"缺 Key / 超时 / 上游失败"| LOCAL["understandIntent"]
+    ARK --> FC["命名 Function Calling"]
+    FC --> N["normalizeIntent"]
     LOCAL --> N
-    N -->|缺预算| Q[预算澄清]
-    N -->|预算完整| R[本地过滤与召回]
-    P[(daily-products.json)] --> R
-    R --> G[核实资格门槛]
-    G --> S[启发式检索分 + 推荐分]
-    S --> T[Top 3]
-    T --> UI[理由 / 取舍 / 三类依据]
-    M[(metrics.json)] --> UI
+    N -->|"缺预算"| Q["预算澄清"]
+    N -->|"预算已说明或不限"| R["本地过滤与候选召回"]
+    P[("daily-products.json")] --> R
+    R --> W["POST /api/search"]
+    W -->|"已配置联网能力"| WEB["品牌官网与公开网页"]
+    W -->|"失败或未开通"| G["保留本地结果"]
+    WEB --> E["来源白名单分级与摘要线索"]
+    E --> G
+    R --> G
+    G --> H["人工官方参考执行硬约束"]
+    H --> S["启发式检索分 + 推荐分"]
+    S --> T["Top 3"]
+    T --> UI["理由 / 取舍 / 三类依据"]
+    M[("metrics.json")] --> UI
 ```
 
-浏览器加载 `daily-products.json` 与 `metrics.json`。服务端只把当前需求文本、System Prompt 和 Function Schema 发给豆包；商品目录、核实属性表和销售聚合不进入模型请求。
+浏览器加载 `daily-products.json` 与 `metrics.json`。需求解析只把当前需求文本、System Prompt 和 Function Schema 发给豆包。浏览器调用联网接口时只提交最多 3 个候选 ID，服务端再从清洗生成的身份白名单重建名称、品牌、品类和产品类型；不发送完整商品目录、销售聚合或样本价。
 
 ## 2. 本项目中的 RAG
 
-本版的 RAG 是本地证据链，不是让大模型回答商品知识：
+本版的 RAG 是“本地候选 + 联网证据 + 本地复核”，不是让大模型自由生成商品事实：
 
-1. **Retrieval**：按结构化意图从 3,497 个商品对象过滤，最多保留 36 个候选。
-2. **Evidence gating**：敏感肌、明确避开成分或需要核实的功效触发 `recommendation_eligibility` 门槛。
-3. **Augmentation**：推荐理由只读取选中商品对象中的历史字段、当前品牌官方参考和证据状态。
-4. **Generation**：`lib/agent.ts` 使用确定性模板生成理由与取舍；豆包不参与商品理由生成。
+1. **Retrieval**：按结构化意图从 3,497 个商品对象过滤并打分；只有敏感肌、成分、功效、品牌或未枚举类型需求才选最多 3 个联网候选，基础品类/预算需求不消耗搜索额度。
+2. **Web evidence**：`/api/search` 使用 Search Infinity 专用 Key，或复用已开通豆包搜索的 Agent Plan Key；上游固定，响应只保留安全 URL、标题、摘要和匹配字段。
+3. **Evidence gating**：敏感肌、明确避开成分或用户明确要求核实功效时触发硬门槛；普通“想要保湿”等只作为相关性偏好。
+4. **Authority check**：品牌与官网域名白名单同时命中时标记为官网发现线索；所有搜索摘要都只记录 `search_summary_mentions_*`，不改变敏感肌、具体功效或成分避雷资格。
+5. **Generation**：`lib/agent.ts` 使用确定性模板生成理由与取舍；联网搜索不覆盖历史样本价，也不生成实时售价。
 
 ## 3. 数据构建链路
 
@@ -72,6 +79,7 @@ CSV
 - `public/data/manifest.json`：Schema、来源层、公开文件名和布尔边界；
 - `data/daily_chemicals/catalog_quality.json`：实际清洗计数与资格计数；
 - `data/daily_chemicals/category_sales_summary.json`：去标识商品编码聚合。
+- `data/daily_chemicals/product-identities.json`：服务端联网候选身份白名单，只含 ID、名称、品牌、品类和产品类型。
 
 当前 manifest 不生成文件哈希、字节数或生成时间。
 
@@ -105,8 +113,9 @@ CSV
 
 ```json
 {
-  "category": "护肤",
+  "category": "面部护理",
   "productTypes": ["乳液"],
+  "excludedProductTypes": [],
   "budgetMin": null,
   "budgetMax": 200,
   "skinType": "油性",
@@ -125,9 +134,26 @@ CSV
 }
 ```
 
-Function Schema 对品类、肤质、关注问题、数组数量、澄清字段和置信度设定约束。`normalizeIntent` 忽略应用未使用的额外内容、规范预算和成分同义词，并生成本地排序所需字段。当前没有已知过敏史、质地偏好或 `medical_red_flag` 等医疗风险字段。
+Function Schema 对本地规范品类、产品类型、排除产品类型、肤质、关注问题、数组数量、预算上下限、澄清字段和置信度设定约束。`normalizeIntent` 仍以用户原句中的明确正负关系为准，处理“不要/只要/换成/改成”、产品别名、预算范围和成分同义词，防止模型结果直接进入检索。当前没有已知过敏史、质地偏好或 `medical_red_flag` 等医疗风险字段。
 
 当前 UI 只实现预算澄清：没有预算时进入澄清页并显示预算按钮。即使远端返回其他 `clarificationField`，当前推荐流程不会展示专门的品类、肤质或功效追问界面。
+
+### 4.4 豆包联网接口
+
+`POST /api/search` 接受当前需求及最多 3 个本地候选 ID。服务端执行：
+
+- 校验同源请求标记，并按来源地址执行每 5 分钟最多 12 次的进程内限流；
+- Content-Length 最大 4,000 字节，需求仍限制 1–500 字；
+- 只接受 `product-identities.json` 中存在且不重复的 1–3 个 ID，商品名称、品牌、品类和类型均由服务端重建；
+- 优先使用仅存在服务端的 `WEB_SEARCH_API_KEY` 调用固定 Search Infinity 地址；没有专用 Key 时，使用 `ARK_API_KEY` 与 Responses `web_search`；
+- Search Infinity 每次只发一个合并查询，最多取 10 条结果；Responses 最多允许 2 次搜索工具调用；
+- 相同候选和约束的成功结果在当前服务实例内缓存 15 分钟；
+- 8 秒超时，失败返回空证据与原因，前端保留本地推荐；
+- 过滤非 HTTP(S)、本机与私网 URL，限制标题和摘要长度；
+- 按品牌、产品类型与商品名词项映射回本地候选；
+- 只有品牌域名白名单命中时标为 `official`，第三方网页即使标题写“官方”也只能标为 `public`；二者都只作发现线索。
+
+联网请求不包含样本价，因此不会提供或覆盖当前售价、促销、库存或购买链接。
 
 ## 5. 商品与证据结构
 
@@ -164,11 +190,11 @@ Function Schema 对品类、肤质、关注问题、数组数量、澄清字段�
 `eligible()` 当前检查：
 
 1. 规范化品类；
-2. 产品类型；
+2. 包含产品类型与排除产品类型；
 3. `budgetMin` 和预算上限；
 4. 排除品牌；
 5. 敏感肌资格；
-6. 需要核实证据时的功效资格；
+6. 用户明确要求官方/核实功效时，同时检查功效资格与每个具体目标功效；
 7. 成分避雷通过状态。
 
 ### 6.2 成分避雷
@@ -177,15 +203,14 @@ Function Schema 对品类、肤质、关注问题、数组数量、澄清字段�
 
 - 避开项出现在 `normalized_ingredients` 时排除；
 - 出现在 `normalized_formulated_without` 时放行；
-- `ingredient_list_completeness=full` 时，完整列表未命中可放行；
+- `ingredient_list_completeness=full` 或 `full_current_reference` 时，完整列表未命中可放行；
 - `key_only` 没有明确“不含”时不能据缺失推断安全，因而排除；
 - 对 alcohol，官方明确 `drying alcohol` 不含可满足当前专门兼容规则。
-
-`full_current_reference` 当前没有设置成与 `full` 相同的缺省未命中放行；相关商品也没有成分避雷资格。
+- 成分族会把 `paraben` 与 `methylparaben` 等变体关联；酒精与脂肪醇不做简单子串等同。
 
 ### 6.3 分数
 
-检索分由样本价匹配、关键词、核实功效匹配、品牌、官方参考状态与历史热度组成。推荐分再融合六个 0–1 指数：
+检索分由样本价匹配、关键词、具体功效匹配、品牌、偏好成分、肤质适配、证据状态与历史热度组成。推荐分再融合六个 0–1 指数：
 
 - `efficacy`；
 - `sensitivity`；
@@ -221,11 +246,13 @@ Function Schema 对品类、肤质、关注问题、数组数量、澄清字段�
 - 公开商品不暴露日期、客户/订单字段或活动词，且价格标签为“样本价”；
 - 六个指数有限且在 0–1，敏感肌资格记录具有官方参考和来源。
 
-当前没有 `/api/intent` 自动测试、真实豆包联调测试、浏览器 UI 回归测试、manifest 哈希测试或 `medical_red_flag` 等医疗风险测试。
+`tests/agent.test.ts` 与 `tests/web-search.test.ts` 另覆盖产品别名、实体级否定/改口、宽类目与跨品类映射、目录缺失分支、中文数字及预算方向、成分/品牌正负关系、具体核实功效、paraben 成分族、肤质排序、联网触发门槛、服务端候选白名单、官网域名分级、第三方降级及摘要不升级硬资格，共 17 个自动用例。
+
+当前没有使用真实 Key 的豆包与搜索上游自动联调、浏览器 UI 回归测试、manifest 哈希测试或 `medical_red_flag` 等医疗风险测试。
 
 ## 9. 部署边界
 
-- `ARK_API_KEY`、`ARK_MODEL`、`ARK_BASE_URL` 只由服务端环境读取；
+- `ARK_API_KEY`、可选 `WEB_SEARCH_API_KEY`、`ARK_MODEL`、`ARK_BASE_URL` 只由服务端环境读取；
 - `.env.local` 与其他 `.env*` 不提交；
 - 前端公开 JSON 不包含用户输入、API Key、客户编码或订单编码；
 - 无 Key 时基础体验使用本地规则；

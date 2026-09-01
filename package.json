@@ -12,8 +12,9 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern Coze --ignore-pattern .playwright-cli --ignore-pattern public/data",
     "data:build": ".venv/bin/python scripts/build_daily_catalog.py --beauty-csv \"$BEAUTY_CSV_PATH\" --daily-xlsx \"$DAILY_XLSX_PATH\"",
     "test:data": ".venv/bin/python -m unittest discover -s tests -p 'test_*.py'",
+    "test:agent": "node --experimental-strip-types --test tests/*.test.ts",
     "pipeline": "npm run data:build",
-    "verify": "npm run lint && npm run test:data && npm run build"
+    "verify": "npm run lint && npm run test:data && npm run test:agent && npm run build"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

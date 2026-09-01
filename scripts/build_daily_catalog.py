@@ -412,6 +412,16 @@ def build(
     if missing_verified_ids:
         raise ValueError(f"verified ids not found in marketplace source: {missing_verified_ids}")
     products = make_public_products(latest, verified_by_id)
+    search_identities = [
+        {
+            "product_id": product["product_id"],
+            "name": product["name"],
+            "brand": product["brand"],
+            "category": product["category"],
+            "product_type": product["product_type"],
+        }
+        for product in products
+    ]
     category_summary, workbook_quality = clean_daily_workbook(daily_xlsx)
 
     verified_count = sum(product["evidence_level"] == "official_current_reference" for product in products)
@@ -454,6 +464,7 @@ def build(
             "manually reviewed current official product references",
         ],
         "public_files": ["daily-products.json", "metrics.json", "manifest.json"],
+        "server_files": ["product-identities.json"],
         "contains_live_prices": False,
         "contains_customer_or_order_records": False,
         "advanced_recommendations_require_verified_evidence": True,
@@ -463,6 +474,7 @@ def build(
     write_json(public_dir / "manifest.json", manifest)
     write_json(output_dir / "category_sales_summary.json", category_summary)
     write_json(output_dir / "catalog_quality.json", quality)
+    write_json(output_dir / "product-identities.json", search_identities)
     return {"products": len(products), "quality": quality, "manifest": manifest}
 
 

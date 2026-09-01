@@ -24,8 +24,16 @@ import {
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent, KeyboardEvent, ReactNode } from 'react';
-import { SPEC_LABELS, runAgent, runAgentFromIntent, understandIntent } from '../lib/agent';
-import type { AgentResponse, Intent, Product, Recommendation } from '../lib/agent';
+import {
+  SPEC_LABELS,
+  applyWebEvidence,
+  runAgent,
+  runAgentFromIntent,
+  shouldUseWebDiscovery,
+  understandIntent,
+  webEvidenceCandidates,
+} from '../lib/agent';
+import type { AgentResponse, Intent, Product, Recommendation, WebEvidence } from '../lib/agent';
 
 type Metrics = {
   dataset: Record<string, number>;
@@ -45,7 +53,7 @@ const sampleNeeds = [
 
 const projectDocs = [
   { title: '产品需求文档', detail: '用户问题、目标、功能范围与产品边界', file: '产品需求文档_PRD.md', icon: FileText },
-  { title: '系统架构与 RAG', detail: '豆包需求解析、本地检索与证据约束链路', file: '系统架构与RAG流程.md', icon: Stack },
+  { title: '系统架构与 RAG', detail: '豆包需求解析、本地候选、联网补证与约束复核', file: '系统架构与RAG流程.md', icon: Stack },
   { title: '数据质量与指标', detail: '清洗规则、缺失值与核实属性覆盖率', file: '实验与指标设计.md', icon: ChartLineUp },
   { title: '日化数据字典', detail: '历史商品快照、样本价与官方证据字段', file: '数据字典.md', icon: Database },
 ];
@@ -252,7 +260,11 @@ export default function Home() {
     if (!response) return [];
     return [
       ['品类', response.intent.category],
-      ['预算', response.intent.budget ? '≤ ¥' + response.intent.budget.toLocaleString('zh-CN') : '待补充'],
+      ['预算', response.intent.budget
+        ? (response.intent.budgetMin !== null ? `¥${response.intent.budgetMin.toLocaleString('zh-CN')}–¥${response.intent.budget.toLocaleString('zh-CN')}` : '≤ ¥' + response.intent.budget.toLocaleString('zh-CN'))
+        : response.intent.budgetMin !== null
+          ? `≥ ¥${response.intent.budgetMin.toLocaleString('zh-CN')}`
+          : response.intent.needsClarification ? '待补充' : '不限'],
       ['场景', response.intent.useCase],
       ['优先', SPEC_LABELS[response.intent.primaryPreference]],
     ];
@@ -300,6 +312,7 @@ export default function Home() {
     setProcessingStage(0); setView('processing');
     [650, 1320, 2050].forEach((delay, index) => timersRef.current.push(window.setTimeout(() => setProcessingStage(index + 1), delay)));
     const minimumAnimation = new Promise<void>((resolve) => window.setTimeout(resolve, 2800));
+    let resolvedIntent = localIntent;
     let next: AgentResponse = localResponse;
     try {
       const apiResponse = await fetch('/api/intent', {
@@ -309,10 +322,36 @@ export default function Home() {
       });
       if (apiResponse.ok) {
         const data = await apiResponse.json() as { intent?: Intent };
-        if (data.intent) next = runAgentFromIntent(data.intent, products);
+        if (data.intent) {
+          resolvedIntent = data.intent;
+          next = runAgentFromIntent(resolvedIntent, products);
+        }
       }
     } catch {
       next = localResponse;
+    }
+    if (next.kind === 'recommendation' && shouldUseWebDiscovery(resolvedIntent)) {
+      try {
+        const candidates = webEvidenceCandidates(resolvedIntent, products, 3);
+        if (candidates.length) {
+          const searchResponse = await fetch('/api/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Zhixuan-Request': 'web-evidence-v1' },
+            body: JSON.stringify({
+              query: trimmed,
+              candidateIds: candidates.map((product) => product.product_id),
+            }),
+          });
+          if (searchResponse.ok) {
+            const data = await searchResponse.json() as { evidence?: WebEvidence[] };
+            if (data.evidence?.length) {
+              next = runAgentFromIntent(resolvedIntent, applyWebEvidence(products, data.evidence, resolvedIntent));
+            }
+          }
+        }
+      } catch {
+        // 联网补证失败时保留已完成的本地约束结果。
+      }
     }
     await minimumAnimation;
     if (requestId !== executionRequestRef.current) return;
@@ -377,7 +416,7 @@ export default function Home() {
           <button className="sample-prompt" type="button" onClick={() => { void execute(defaultNeed); }} disabled={!dataReady}>
             <span>你可以这样说</span><strong>“{defaultNeed}”</strong>
           </button>
-          <div className="demo-disclosure"><Info aria-hidden="true" size={16} />豆包只解析当前需求；商品检索与证据约束在本地完成</div>
+          <div className="demo-disclosure"><Info aria-hidden="true" size={16} />豆包解析当前需求并联网补证；本地目录负责候选与硬约束复核</div>
           {dataError && <div className="inline-error"><span>商品数据暂时未载入。</span><button type="button" onClick={retryData}>重新载入</button></div>}
         </div>
         <div className="decision-preview">
@@ -430,12 +469,12 @@ export default function Home() {
       const stages = [
         { label: '理解需求', detail: '抽取品类、预算、场景与偏好', Icon: ListChecks },
         { label: '检索候选', detail: '按约束从离线日化历史数据召回', Icon: MagnifyingGlass },
-        { label: '证据排序', detail: '敏感肌、成分与功效启用核实证据门槛', Icon: SlidersHorizontal },
+        { label: '联网补证', detail: '查找官网或公开页，再按来源和约束复核', Icon: SlidersHorizontal },
         { label: '整理依据', detail: '生成理由、限制与证据来源', Icon: ShieldCheck },
       ];
       return (
         <section className="workspace processing-view">
-          <div className="processing-intro"><span>正在处理</span><h1 data-view-title tabIndex={-1}>把你的需求变成<br />可以比较的方案</h1><p>豆包仅接收当前需求文本；商品数据、本地检索和证据校验不上传。</p></div>
+          <div className="processing-intro"><span>正在处理</span><h1 data-view-title tabIndex={-1}>把你的需求变成<br />可以比较的方案</h1><p>需求解析只发送当前文本；联网补证最多发送三个候选身份，不发送完整目录或样本价。</p></div>
           <div className="pipeline-panel" aria-live="polite">
             <div className="pipeline-status"><div className="processing-spinner" /><div><span>AGENT WORKFLOW</span><h2>{stages[Math.min(processingStage, 3)].label}</h2></div><strong>{Math.min(processingStage + 1, 4)} / 4</strong></div>
             <div className="pipeline-steps">
@@ -527,14 +566,22 @@ export default function Home() {
 
     if (view === 'evidence' && recommendation && activeRecommendation) {
       const item = activeRecommendation;
+      const webOfficial = item.product.evidence_sources.some((source) => source.source_kind === 'brand_official_page_web');
       const verified = item.product.evidence_level === 'official_current_reference';
+      const budgetSummary = recommendation.intent.budget !== null
+        ? recommendation.intent.budgetMin !== null
+          ? `预算 ¥${recommendation.intent.budgetMin.toLocaleString('zh-CN')}–¥${recommendation.intent.budget.toLocaleString('zh-CN')}`
+          : `预算 ≤ ¥${recommendation.intent.budget.toLocaleString('zh-CN')}`
+        : recommendation.intent.budgetMin !== null
+          ? `预算 ≥ ¥${recommendation.intent.budgetMin.toLocaleString('zh-CN')}`
+          : '预算不限';
       const ingredientSummary = item.product.ingredients.length
         ? item.product.ingredients.slice(0, 5).join('、') + (item.product.ingredients.length > 5 ? '等' : '')
         : '暂无经核实的成分表';
       const sources: Array<{ key: EvidenceKey; label: string; source: string; status: string; summary: string; meta: string; limited?: boolean }> = [
         { key: 'product', label: '历史商品字段', source: '结构化商品记录 · ' + item.product.product_id, status: '可用', summary: '样本价 ¥' + item.product.price.toLocaleString('zh-CN') + '；历史热度 ' + (item.product.sales_count?.toLocaleString('zh-CN') ?? '缺失') + '；' + SPEC_LABELS[recommendation.intent.primaryPreference] + '指数 ' + score(item.product[recommendation.intent.primaryPreference]) + '。', meta: '来源：离线日化历史商品快照 · 不含实时库存与行情' },
-        { key: 'query', label: '需求映射', source: '结构化需求摘要 · ' + (recommendation.intent.provider === 'doubao' ? 'DOUBAO' : 'LOCAL FALLBACK'), status: '可用', summary: '预算 ≤ ¥' + (recommendation.intent.budget?.toLocaleString('zh-CN') ?? '待补充') + '；' + recommendation.intent.useCase + '；' + SPEC_LABELS[recommendation.intent.primaryPreference] + '优先。', meta: '更新：当前会话 · 豆包只解析需求，本地完成商品检索' },
-        { key: 'review', label: '成分与功效证据', source: verified ? '品牌官方产品页 · CURRENT REFERENCE' : '历史标题 · UNVERIFIED', status: verified ? '当前参考已核实' : '依据有限', summary: verified ? '成分参考：' + ingredientSummary + '。功效仅按品牌官方声明呈现。' : '历史标题中的功效与成分词未经核实，不作为敏感肌或成分避雷结论。', meta: verified ? '核实：' + (item.product.formula_checked_at ?? '未标注') + ' · 当前跨市场官方参考，不反推历史配方' : '仅可用于普通检索，不进入高风险推荐', limited: !verified },
+        { key: 'query', label: '需求映射', source: '结构化需求摘要 · ' + (recommendation.intent.provider === 'doubao' ? 'DOUBAO' : 'LOCAL FALLBACK'), status: '可用', summary: budgetSummary + '；' + recommendation.intent.useCase + '；' + SPEC_LABELS[recommendation.intent.primaryPreference] + '优先。', meta: '更新：当前会话 · 豆包解析需求，本地完成候选与硬约束复核' },
+        { key: 'review', label: '成分与功效证据', source: verified ? '品牌官方产品页 · CURRENT REFERENCE' : webOfficial ? '联网定位品牌官网 · WEB DISCOVERY' : item.product.evidence_level === 'web_public_reference' ? '联网公开页 · PUBLIC REFERENCE' : '历史标题 · UNVERIFIED', status: verified ? '当前参考已核实' : webOfficial ? '官网发现线索' : item.product.evidence_level === 'web_public_reference' ? '公开线索' : '依据有限', summary: verified ? '成分参考：' + ingredientSummary + '。功效仅按品牌官方声明呈现。' : webOfficial ? '已定位品牌官网来源，但搜索摘要尚未逐页核对，不提高敏感肌、成分避雷或核实功效资格。' : item.product.evidence_level === 'web_public_reference' ? '已附联网公开来源，但第三方内容不作为敏感肌、成分安全或核实功效结论。' : '历史标题中的功效与成分词未经核实，不作为敏感肌或成分避雷结论。', meta: verified ? '核实：' + (item.product.formula_checked_at ?? '未标注') + ' · 当前官网参考，不反推历史配方' : item.product.evidence_level === 'web_public_reference' ? '联网来源只作发现线索；样本价未被覆盖' : '仅可用于普通检索，不进入高风险推荐', limited: !verified },
       ];
       return (
         <section className="workspace evidence-view">
@@ -561,7 +608,7 @@ export default function Home() {
                   </div>;
                 })}
               </div>
-              <div className="evidence-disclosure"><Info size={17} />商品与样本价来自离线日化历史数据；敏感肌、成分与功效仅使用已核实的当前官方参考。</div>
+              <div className="evidence-disclosure"><Info size={17} />商品与样本价来自离线日化历史数据；敏感肌、成分与核实功效只使用已逐项整理的人工官方参考，联网摘要只作发现线索。</div>
             </article>
           </div>
         </section>
@@ -573,7 +620,7 @@ export default function Home() {
         <div className="project-hero">
           <div>
             <span>项目说明 · 可复现 AI 产品作品集</span><h1 data-view-title tabIndex={-1}>从需求理解，到有依据的推荐决策</h1>
-            <p>智选是一个面向中文日化选品的在线 Agent：豆包在服务端解析用户需求，本地从清洗后的历史商品快照中检索，并以官方核实属性约束敏感肌、成分避雷与功效推荐。</p>
+            <p>智选是一个面向中文日化选品的在线 Agent：豆包在服务端解析需求并定位联网来源，本地从清洗后的历史快照中筛选，敏感肌、成分避雷与核实功效仍只使用人工官方参考。</p>
             <div className="project-actions"><Button onClick={() => navigate('welcome')} icon={<ArrowRight size={16} />}>体验智能导购</Button><a className="ui-button ui-button-secondary" href={githubBase} target="_blank" rel="noreferrer"><span>查看 GitHub</span><GithubLogo size={17} /></a><a className="ui-button ui-button-ghost" href={figmaUrl} target="_blank" rel="noreferrer"><span>查看 Figma</span></a></div>
           </div>
           <div className="project-boundary"><ShieldCheck size={28} /><span>服务边界</span><p>不公开客户或订单明细，不调用实时商品服务，不用历史标题推断敏感肌安全性、完整成分或产品功效。</p></div>
@@ -590,8 +637,8 @@ export default function Home() {
             {[
               ['01', '理解需求', '豆包抽取预算、品类、肤质、功效与成分约束；失败时回退本地规则。', ListChecks],
               ['02', '检索商品', '从清洗后的离线日化历史商品快照按结构化约束召回候选。', MagnifyingGlass],
-              ['03', '证据排序', '预算、历史信号与官方核实属性共同构成可解释得分。', SlidersHorizontal],
-              ['04', '约束生成', '只基于检索证据生成理由、限制和取舍，不让模型编造商品事实。', ShieldCheck],
+              ['03', '联网发现', '对三个候选查找官网或公开页，标注来源等级，搜索摘要只作线索。', SlidersHorizontal],
+              ['04', '约束生成', '融合预算、历史信号和分级证据生成理由、限制与取舍。', ShieldCheck],
             ].map(([step, title, detail, Icon]) => {
               const FlowIcon = Icon as typeof ListChecks;
               return <article key={String(step)}><div><span>{step as string}</span><FlowIcon size={21} /></div><h3>{title as string}</h3><p>{detail as string}</p></article>;
@@ -615,7 +662,7 @@ export default function Home() {
             return <a key={doc.title} href={githubBase + '/blob/main/docs/' + encodeURIComponent(doc.file)} target="_blank" rel="noreferrer"><Icon size={22} /><div><h3>{doc.title}</h3><p>{doc.detail}</p></div><ArrowRight size={16} /></a>;
           })}</div>
         </div>
-        <div className="project-note"><Code size={19} /><p>豆包 Key 仅通过服务端环境变量注入；无 Key、超时或返回无效时使用确定性本地解析，商品库不会发送给大模型。</p></div>
+        <div className="project-note"><Code size={19} /><p>豆包与搜索 Key 只通过服务端 Secret 注入；联网失败时保留本地结果，只发送最多三个候选身份，不发送完整目录、销售聚合或样本价。</p></div>
       </section>
     );
 

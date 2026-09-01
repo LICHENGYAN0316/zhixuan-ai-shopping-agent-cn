@@ -12,6 +12,9 @@
     "metrics.json",
     "manifest.json"
   ],
+  "server_files": [
+    "product-identities.json"
+  ],
   "contains_live_prices": false,
   "contains_customer_or_order_records": false,
   "advanced_recommendations_require_verified_evidence": true
