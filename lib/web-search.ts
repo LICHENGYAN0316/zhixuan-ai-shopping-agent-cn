@@ -159,7 +159,8 @@ async function searchArk(
         { role: 'user', content: buildSearchQuery(candidates, intent) },
       ],
       tools: [{ type: 'web_search' }],
-      tool_choice: 'auto',
+      tool_choice: 'required',
+      include: ['web_search_call.action.sources'],
       max_tool_calls: 2,
     }),
     cache: 'no-store',
@@ -169,38 +170,51 @@ async function searchArk(
   const data = await response.json() as {
     output?: Array<{
       type?: string;
+      action?: {
+        sources?: Array<{ type?: string; url?: string; title?: string }>;
+      };
       content?: Array<{
         type?: string;
         text?: string;
-        annotations?: Array<{ type?: string; url?: string; title?: string }>;
+        annotations?: Array<{
+          type?: string;
+          url?: string;
+          title?: string;
+          url_citation?: { url?: string; title?: string };
+        }>;
       }>;
     }>;
   };
   const hits: SearchHit[] = [];
+  const addHit = (rawUrl: unknown, rawTitle: unknown) => {
+    const url = safeUrl(rawUrl);
+    if (!url) return;
+    hits.push({
+      title: cleanText(rawTitle, 240),
+      url,
+      siteName: cleanText(new URL(url).hostname, 100),
+      summary: '',
+    });
+  };
   for (const output of data.output ?? []) {
+    if (output.type === 'web_search_call') {
+      for (const source of output.action?.sources ?? []) addHit(source.url, source.title);
+    }
     for (const content of output.content ?? []) {
       for (const annotation of content.annotations ?? []) {
-        if (annotation.type !== 'url_citation') continue;
-        const url = safeUrl(annotation.url);
-        if (!url) continue;
-        hits.push({
-          title: cleanText(annotation.title, 240),
-          url,
-          siteName: cleanText(new URL(url).hostname, 100),
-          // Responses returns one synthesized paragraph for several citations.
-          // Do not attribute that whole paragraph to each individual source.
-          summary: '',
-        });
+        const citation = annotation.url_citation ?? annotation;
+        addHit(citation.url, citation.title);
       }
     }
   }
-  return hits;
+  return [...new Map(hits.map((hit) => [hit.url, hit])).values()];
 }
 
 function candidateScore(candidate: SearchCandidate, hit: SearchHit): number {
   const haystack = `${hit.title} ${hit.siteName} ${hit.summary} ${hit.url}`.toLowerCase();
   const aliases = brandAliases(candidate.brand);
   let score = aliases.some((alias) => haystack.includes(alias.toLowerCase())) ? 4 : 0;
+  if (isOfficial(candidate, hit.url)) score += 6;
   if (haystack.includes(candidate.productType.toLowerCase())) score += 2;
   const nameWithoutBrand = aliases.reduce(
     (name, alias) => name.replace(new RegExp(escapeRegExp(alias), 'gi'), ' '),
