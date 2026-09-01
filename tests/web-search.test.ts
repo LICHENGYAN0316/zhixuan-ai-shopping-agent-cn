@@ -29,7 +29,7 @@ test('web search maps official citations to a candidate and explicit constraints
       WebResults: [{
         Title: '雅漾舒护活泉水喷雾 官方产品页',
         SiteName: '雅漾官网',
-        Url: 'https://www.eau-thermale-avene.com.cn/product/spray',
+        Url: 'https://www.aveneusa.com/thermal-spring-water-300ml',
         Summary: '适合敏感肌，提供舒缓功效，配方不含香精。',
       }],
     },
@@ -39,7 +39,7 @@ test('web search maps official citations to a candidate and explicit constraints
     const result = await searchWebEvidence([{
       productId: 'P1',
       name: '雅漾舒护活泉水喷雾',
-      brand: '雅漾',
+      brand: 'Avène 雅漾',
       category: '面部护理',
       productType: '喷雾',
     }], intent, new AbortController().signal);

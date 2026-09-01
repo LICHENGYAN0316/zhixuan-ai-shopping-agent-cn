@@ -33,7 +33,7 @@ const OFFICIAL_DOMAINS: Record<string, string[]> = {
   '资生堂': ['shiseido.com.cn', 'shiseido.com'],
   '美宝莲': ['maybelline.com.cn', 'maybelline.com'],
   '薇姿': ['vichy.com.cn', 'vichy.com'],
-  '雅漾': ['eau-thermale-avene.com.cn', 'eau-thermale-avene.com', 'avene.com'],
+  '雅漾': ['eau-thermale-avene.com.cn', 'eau-thermale-avene.com', 'avene.com', 'aveneusa.com'],
   '雪花秀': ['sulwhasoo.com.cn', 'sulwhasoo.com'],
   'SK-II': ['sk-ii.com.cn', 'sk-ii.com'],
   'SKII': ['sk-ii.com.cn', 'sk-ii.com'],
@@ -199,10 +199,14 @@ async function searchArk(
 
 function candidateScore(candidate: SearchCandidate, hit: SearchHit): number {
   const haystack = `${hit.title} ${hit.siteName} ${hit.summary} ${hit.url}`.toLowerCase();
-  let score = haystack.includes(candidate.brand.toLowerCase()) ? 4 : 0;
+  const aliases = brandAliases(candidate.brand);
+  let score = aliases.some((alias) => haystack.includes(alias.toLowerCase())) ? 4 : 0;
   if (haystack.includes(candidate.productType.toLowerCase())) score += 2;
-  const tokens = candidate.name
-    .replace(candidate.brand, ' ')
+  const nameWithoutBrand = aliases.reduce(
+    (name, alias) => name.replace(new RegExp(escapeRegExp(alias), 'gi'), ' '),
+    candidate.name,
+  );
+  const tokens = nameWithoutBrand
     .split(/[\s/（）()【】\[\]·,，:：+_-]+/)
     .map((item) => item.trim().toLowerCase())
     .filter((item) => item.length >= 2)
@@ -211,9 +215,24 @@ function candidateScore(candidate: SearchCandidate, hit: SearchHit): number {
   return score;
 }
 
+function normalizeBrandLabel(value: string): string {
+  return value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+}
+
+function brandAliases(brand: string): string[] {
+  return Array.from(new Set([
+    brand.trim(),
+    ...brand.split(/[\s/|｜·（）()]+/).map((item) => item.trim()),
+  ].filter((item) => item.length >= 2)));
+}
+
 function isOfficial(candidate: SearchCandidate, url: string): boolean {
   const hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-  return (OFFICIAL_DOMAINS[candidate.brand] ?? []).some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
+  const aliases = new Set(brandAliases(candidate.brand).map(normalizeBrandLabel));
+  const domains = Object.entries(OFFICIAL_DOMAINS)
+    .filter(([brand]) => aliases.has(normalizeBrandLabel(brand)))
+    .flatMap(([, values]) => values);
+  return domains.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
 }
 
 function matchTerms(text: string, dictionary: Record<string, string[]>, requested: string[]): string[] {
